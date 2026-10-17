@@ -80,6 +80,19 @@ function detectLanguage(fileName: string): string {
   return "Plain Text";
 }
 
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {}
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function makeScratchTab(serverId: string, index: number): EditorTab {
   const initialContent = `# px0 Zero-Latency Code Editor
 # Ultra-fast, lightweight remote editor for ServerUI
@@ -88,7 +101,7 @@ function makeScratchTab(serverId: string, index: number): EditorTab {
 echo "Hello from ServerUI Editor!"
 `;
   return {
-    id: `scratch_${crypto.randomUUID()}`,
+    id: `scratch_${safeUUID()}`,
     name: `untitled-${index}.sh`,
     serverId,
     content: initialContent,

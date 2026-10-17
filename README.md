@@ -20,7 +20,25 @@ a Go backend stores encrypted credentials and dials each host over plain SSH.
   </tr>
 </table>
 
-## Download
+## 🚀 1-Click Quick Setup (Linux / VPS / macOS)
+
+Run the automated installer on any fresh Ubuntu, Debian, CentOS, Fedora, Arch, or macOS system:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/shahilali5/serverui/main/install.sh | bash
+```
+
+Or from a local clone:
+
+```bash
+./install.sh
+```
+
+The script automatically detects your OS, installs Docker and essential tools if missing, generates secure AES-256-GCM credentials encryption keys, starts the web interface on `http://localhost:3000` (or `http://your-server-ip:3000`), and outputs full management commands.
+
+---
+
+## Download (Desktop Apps)
 
 **Latest release: [ServerUI 0.3.0](https://github.com/rakhechashubham/serverui/releases/tag/v0.3.0).**
 No need to build from source.
@@ -66,23 +84,21 @@ Working in this repository:
   disk, network, and a sortable comparison table), plus per-server CPU, memory,
   disk, network, processes, and systemd services
 - Process inspection and SIGTERM; start, stop, and restart systemd services
-- **Terminal:** browser terminal over WebSocket → SSH PTY, with a tab per server;
-  open it straight from a folder in Files
+- **Terminal:** High-performance browser terminal over WebSocket → SSH PTY with zero-crash bounds checking (eliminates xterm 0x0 resize exceptions), debounced resize observer, live status glow dots, clean normal closure handling, and multi-server tabs; open it straight from any folder in Files or the dock.
+- **Code Editor (powered by [px0](https://github.com/px0-ai/px0)):** Full in-browser remote code editor and inspector inspired by the speed-first, zero-latency px0 IDE architecture. Includes multi-tab buffer management, quick remote file palette (`Cmd+O`), direct remote save (`Cmd+S`), syntax detection across 15+ languages, line numbers gutter with synced scrolling, find & replace (`Cmd+F`), word-wrap, and indent formatting.
 - **Files (SFTP):** a Finder-style file manager with multi-select, drag to move,
   copy/cut/paste, upload, a download queue, compress, and archive extraction
   (`.zip`, `.tar`, `.tar.gz`/`.tgz`, `.tar.bz2`, `.tar.xz`, `.7z`, run on the
   server with its own `tar` / `unzip` / `7z`)
 - **Copy between servers:** drag files or folders onto another connected server
   in the Files sidebar, or copy on one server and paste on another
-- File previews (images, video, audio, PDF, text and code) and a plain text editor
-  for remote files
-- Linux-inspired desktop with a dock, window manager, wallpapers, folder
-  shortcuts, and macOS or Aura themes
+- File previews (images, video, audio, PDF, text and code) and instant remote file editing
+- **Clean Desktop UI & 10 Built-In Free Wallpapers:** Ultra-clean macOS and Aura desktops with a clutter-free glass status widget, 10 free built-in offline vector themes (Crescent Cosmos, Valley Twilight, Neon Orbit, Nordic Aurora, Monterey Wave, Cyber Horizon, Matte Obsidian, Sakura Twilight, Golden Sahara, Nebula Stellar), custom image upload, custom image URL, and real-time blur/brightness adjustments.
+- **Auto-Update System:** Continuous background update checker that automatically detects new releases or updates pushed to GitHub, alerts users with an elegant floating desktop toast, and enables instant 1-click update & reload.
 - AES-256-GCM encryption for stored credentials
 
 Not implemented yet (UI may show Coming Soon):
 
-- Full in-browser code editor (the current editor is a plain text editor)
 - Application, domain, and database management
 - ServerUI CLI
 - ServerUI agent
@@ -431,8 +447,7 @@ No. Makefile targets for them were removed because the code is not in this repos
 - Passphrase-protected private keys are rejected with an explicit error.
 - Host key verification accepts any remote host key (TOFU / pinning is not implemented).
 - There is no user login, SSO, or RBAC for the ServerUI app itself.
-- Applications, Domains, and Databases are not implemented. The editor is a plain
-  text editor (files up to 512 KB, no sudo).
+- Applications, Domains, and Databases are not implemented yet. The editor is powered by px0 for fast remote code inspection and editing.
 - Process and service actions (kill, start/stop/restart) work in a server's own
   System Monitor (Servers → View Metrics). In the all-servers monitor opened from
   the dock they don't act yet.
@@ -445,6 +460,17 @@ No. Makefile targets for them were removed because the code is not in this repos
 - Desktop app: Tauri shell with release installers; code signing / notarization
   depend on CI secrets and are not claimed complete until configured and verified.
 - Official GitHub Release tags publish when maintainers cut `vX.Y.Z`.
+
+## Contributors & Core Team
+
+ServerUI is built and maintained by passionate open-source contributors:
+
+| Avatar | Contributor | Role | Core Focus Areas | Profile |
+| :---: | :--- | :--- | :--- | :---: |
+| <img src="https://github.com/rakhechashubham.png" width="48" height="48" style="border-radius:50%" alt="Shubham Rakhecha" /> | **Shubham Rakhecha** | Founder & Lead Architect | Creator of ServerUI, SSH connection pool, System Monitor, desktop runtime | [@rakhechashubham](https://github.com/rakhechashubham) |
+| <img src="https://github.com/shahilali5.png" width="48" height="48" style="border-radius:50%" alt="Shahil" /> | **Shahil** | Core Contributor | Terminal crash resilience & lifecycle stability, px0 code editor integration, UI/UX polish | [@shahilali5](https://github.com/shahilali5) |
+
+We love contributions! Check out our [Contributing Guide](CONTRIBUTING.md) to join the team and make ServerUI even better.
 
 ## Contact
 

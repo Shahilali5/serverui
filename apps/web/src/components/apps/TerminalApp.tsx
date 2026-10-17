@@ -32,15 +32,31 @@ type Tab = {
 
 type SessionStatus = "connecting" | "connected" | "disconnected";
 
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      // Fall through
+    }
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function makeTab(serverId: string, cwd?: string): Tab {
-  return { id: `${serverId}:${crypto.randomUUID()}`, serverId, cwd };
+  return { id: `${serverId}:${safeUUID()}`, serverId, cwd };
 }
 
 /** Live SSH sessions first, then preview hosts that the app marks connected. */
 function openableServers(servers: Server[]) {
-  const live = servers.filter((server) => server.connected === true && !isSampleServer(server.id));
+  if (!Array.isArray(servers)) return [];
+  const live = servers.filter((server) => server && server.connected === true && !isSampleServer(server.id));
   const preview = servers.filter(
-    (server) => server.connected === true && isSampleServer(server.id),
+    (server) => server && server.connected === true && isSampleServer(server.id),
   );
   return [...live, ...preview];
 }
@@ -56,12 +72,13 @@ function safeFitAndResize(
   socket: WebSocket | null,
 ): { cols: number; rows: number } | null {
   if (!terminal || !fitAddon || !container) return null;
+  if (!container.isConnected) return null;
   if (container.clientWidth < 20 || container.clientHeight < 20) return null;
 
   try {
     const dims = fitAddon.proposeDimensions();
     if (!dims || !Number.isFinite(dims.cols) || !Number.isFinite(dims.rows)) return null;
-    if (dims.cols <= 0 || dims.rows <= 0) return null;
+    if (dims.cols <= 0 || dims.rows <= 0 || dims.cols > 1000 || dims.rows > 1000) return null;
 
     if (terminal.cols !== dims.cols || terminal.rows !== dims.rows) {
       terminal.resize(dims.cols, dims.rows);
@@ -78,19 +95,29 @@ function safeFitAndResize(
 
 export function TerminalApp({ payload }: { payload?: WindowPayload }) {
   const { servers, connectServer } = useSession();
-  const connected = openableServers(servers);
+  const serverList = Array.isArray(servers) ? servers : [];
+  const connected = openableServers(serverList);
   const payloadKey = `${payload?.serverId ?? ""}:${payload?.cwd ?? ""}`;
 
   // Initial state derived cleanly without render-phase setState calls
   const [tabs, setTabs] = useState<Tab[]>(() => {
+    if (payload?.serverId) {
+      const preferred = serverList.find((s) => s.id === payload.serverId);
+      if (preferred) {
+        return [makeTab(preferred.id, payload.cwd)];
+      }
+    }
     if (connected.length > 0) {
       const preferred = connected.find((server) => server.id === payload?.serverId) ?? connected[0];
       return [makeTab(preferred.id, preferred.id === payload?.serverId ? payload?.cwd : undefined)];
     }
+    if (serverList.length > 0) {
+      return [makeTab(serverList[0].id, payload?.cwd)];
+    }
     return [];
   });
   const [activeId, setActiveId] = useState<string | null>(() => tabs[0]?.id ?? null);
-  const [openedKey, setOpenedKey] = useState<string | null>(() => (connected.length > 0 ? payloadKey : null));
+  const [openedKey, setOpenedKey] = useState<string | null>(() => (tabs.length > 0 ? payloadKey : null));
   const [sessionStatuses, setSessionStatuses] = useState<Record<string, SessionStatus>>({});
   const [dimensions, setDimensions] = useState<Record<string, { cols: number; rows: number }>>({});
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -104,7 +131,7 @@ export function TerminalApp({ payload }: { payload?: WindowPayload }) {
     if (openedKey === payloadKey) return;
     setOpenedKey(payloadKey);
 
-    const exists = connected.some((server) => server.id === payload.serverId);
+    const exists = serverList.some((server) => server.id === payload.serverId);
     if (!exists) return;
 
     setTabs((current) => {
@@ -119,18 +146,18 @@ export function TerminalApp({ payload }: { payload?: WindowPayload }) {
       setActiveId(newTab.id);
       return [...current, newTab];
     });
-  }, [payloadKey, payload?.serverId, payload?.cwd, connected, openedKey]);
+  }, [payloadKey, payload?.serverId, payload?.cwd, serverList, openedKey]);
 
-  // If initial load had 0 connected servers and servers subsequently become ready
+  // If initial load had 0 tabs and servers subsequently become available
   useEffect(() => {
-    if (tabs.length === 0 && connected.length > 0) {
-      const preferred = connected.find((server) => server.id === payload?.serverId) ?? connected[0];
+    if (tabs.length === 0 && serverList.length > 0) {
+      const preferred = connected.find((server) => server.id === payload?.serverId) ?? connected[0] ?? serverList[0];
       const tab = makeTab(preferred.id, preferred.id === payload?.serverId ? payload?.cwd : undefined);
       setTabs([tab]);
       setActiveId(tab.id);
       setOpenedKey(payloadKey);
     }
-  }, [connected, payload?.serverId, payload?.cwd, payloadKey, tabs.length]);
+  }, [connected, serverList, payload?.serverId, payload?.cwd, payloadKey, tabs.length]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -199,7 +226,8 @@ export function TerminalApp({ payload }: { payload?: WindowPayload }) {
   const filteredConnected = connected.filter((s) => {
     if (!pickerSearch.trim()) return true;
     const q = pickerSearch.toLowerCase();
-    return s.name.toLowerCase().includes(q) || s.host.toLowerCase().includes(q);
+    const host = s.address || s.hostname || (s as unknown as { host?: string }).host || "";
+    return s.name.toLowerCase().includes(q) || host.toLowerCase().includes(q);
   });
 
   const activeTab = tabs.find((t) => t.id === activeId);
@@ -343,7 +371,7 @@ export function TerminalApp({ payload }: { payload?: WindowPayload }) {
                         />
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate font-medium">{server.name}</span>
-                          <span className="truncate text-[10.5px] text-white/40">{server.host}</span>
+                          <span className="truncate text-[10.5px] text-white/40">{server.address || server.hostname || (server as unknown as { host?: string }).host || "remote"}</span>
                         </div>
                         <span className="size-1.5 rounded-full bg-emerald-400" />
                       </button>
@@ -539,7 +567,11 @@ function TerminalSession({
         onRegisterTerminal(tabId, terminal);
 
         terminal.loadAddon(fitAddon);
-        terminal.open(host.current);
+        try {
+          terminal.open(host.current);
+        } catch (openErr) {
+          console.warn("[Terminal] Failed to open in DOM:", openErr);
+        }
 
         // Safe initial fit
         const initialDims = safeFitAndResize(terminal, fitAddon, host.current, null);

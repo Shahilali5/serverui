@@ -15,6 +15,7 @@ import { formatDockBadge, useDockActivity } from "@/src/lib/dock-activity";
 import { useDockPrefs } from "@/src/lib/dock-prefs";
 import { useTheme } from "@/src/lib/theme";
 import { WallpaperBackdrop } from "@/src/lib/wallpaper";
+import { UpdateToast } from "@/src/components/desktop/UpdateToast";
 
 type Panel = "launcher" | "settings" | null;
 
@@ -145,6 +146,7 @@ export function AuraDesktop() {
       </aside>
       <main className="shell-screen" onPointerDown={onPointerDown}>
         <WallpaperBackdrop className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-80" />
+        <UpdateToast />
         <div className="shell-hero">
           <BrandMark size={46} />
           <h1>ServerUI</h1>

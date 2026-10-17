@@ -61,7 +61,7 @@ function AppBody({
     case "databases":
       return <DatabasesApp />;
     case "settings":
-      return <SettingsApp />;
+      return <SettingsApp payload={payload} />;
     case "about":
       return <AboutApp />;
   }

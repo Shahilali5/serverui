@@ -12,6 +12,7 @@ import { ServerIcon } from "@/src/components/servers/ServerIcon";
 import { useTheme } from "@/src/lib/theme";
 import { useSession } from "@/src/lib/session";
 import { useWindowManager, type WindowState } from "@/src/components/window/window-context";
+import { WindowErrorBoundary } from "@/src/components/window/WindowErrorBoundary";
 // Genie minimize/restore is paused for now.
 // import {
 //   animateWindowFromDock,
@@ -223,7 +224,11 @@ export function Window({ window: win, children }: { window: WindowState; childre
         />
       )}
       <WindowChromeProvider value={controls}>
-        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-auto">
+          <WindowErrorBoundary windowTitle={title} onClose={controls.onClose}>
+            {children}
+          </WindowErrorBoundary>
+        </div>
       </WindowChromeProvider>
       {!win.maximized
         ? EDGES.map((edge) => (

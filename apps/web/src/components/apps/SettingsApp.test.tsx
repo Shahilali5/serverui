@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { WallpaperProvider } from "@/src/lib/wallpaper";
+import { AutoUpdaterProvider } from "@/src/lib/updater";
 import { SettingsApp } from "./SettingsApp";
 
 describe("SettingsApp", () => {
@@ -12,42 +13,53 @@ describe("SettingsApp", () => {
     localStorage.removeItem("serverui-wallpaper-light");
   });
 
-  it("shows the General tab with wallpaper selection", async () => {
+  it("shows the General tab and allows navigation between Wallpapers and Updates", async () => {
     render(
-      <WallpaperProvider>
-        <SettingsApp />
-      </WallpaperProvider>,
+      <AutoUpdaterProvider>
+        <WallpaperProvider>
+          <SettingsApp />
+        </WallpaperProvider>
+      </AutoUpdaterProvider>,
     );
-    expect(screen.getByRole("button", { name: "General" })).toHaveAttribute("aria-current", "page");
+
+    expect(screen.getByRole("button", { name: /General/i })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("heading", { name: "General" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Wallpaper" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Crescent" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Valley" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Orbit" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Upload wallpaper" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload wallpaper…" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Dock" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Check for updates/i })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("option", { name: "Valley" }));
-    expect(screen.getByRole("option", { name: "Valley" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("heading", { name: "Desktop Theme" })).toBeInTheDocument();
+
+    // Navigate to Wallpapers tab
+    const wallpaperNavBtn = screen.getByRole("button", { name: /Wallpapers/i });
+    await userEvent.click(wallpaperNavBtn);
+
+    expect(screen.getByRole("heading", { name: "Wallpapers" })).toBeInTheDocument();
+    expect(screen.getByText(/Built-in Wallpapers \(10 Free\)/i)).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Crescent Cosmos" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Valley Twilight" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Nordic Aurora" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Monterey Wave" })).toBeInTheDocument();
+
+    // Navigate to Updates tab
+    const updatesNavBtn = screen.getByRole("button", { name: /Updates/i });
+    await userEvent.click(updatesNavBtn);
+
+    expect(screen.getByRole("heading", { name: "Software Updates" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Check for Updates/i })).toBeInTheDocument();
+    expect(screen.getByText(/Automatic Update Checks/i)).toBeInTheDocument();
   });
 
-  it("swaps the built-in scenes for the light set", () => {
+  it("loads 10 light wallpapers when light theme is active", async () => {
     document.documentElement.dataset.theme = "light";
     render(
-      <WallpaperProvider>
-        <SettingsApp />
-      </WallpaperProvider>,
+      <AutoUpdaterProvider>
+        <WallpaperProvider>
+          <SettingsApp payload={{ cwd: "wallpaper" }} />
+        </WallpaperProvider>
+      </AutoUpdaterProvider>,
     );
-    expect(screen.getByRole("option", { name: "Fjord" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Sunrise" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("option", { name: "Alpine" })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: "Crescent" })).not.toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Fjord" }).querySelector("span")).toHaveStyle({
-      backgroundImage: 'url("/wallpapers/fjord.png")',
-    });
+
+    expect(screen.getByRole("heading", { name: "Wallpapers" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Sunrise Valley" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Nordic Fjord" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Alpine Snow" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Emerald Stream" })).toBeInTheDocument();
   });
 });

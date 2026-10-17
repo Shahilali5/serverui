@@ -35,10 +35,24 @@ Date: _______________
 
 - [ ] Open Terminal from dock
 - [ ] Run a simple command
-- [ ] Resize window; terminal refits
+- [ ] Rapid window resize; terminal refits cleanly without 0x0 exceptions
+- [ ] Multi-server tabs: switch between tabs repeatedly without blank screen or crash
 - [ ] Close window; reconnect from a new Terminal window
-- [ ] Disconnect / offline server shows reconnect affordance
+- [ ] Disconnect / offline server shows reconnect affordance and floating toast
 - [ ] Typing in terminal is not stolen by ⌘/Ctrl+W
+
+## Code Editor (px0)
+
+- [ ] Open Editor from Dock, Desktop context menu, or Files (Right-click → Edit)
+- [ ] px0 branding badge visible with link to `github.com/px0-ai/px0`
+- [ ] Open new scratch buffer tab (`+`)
+- [ ] Quick Open (`Cmd/Ctrl+O`) loads remote file by path (e.g. `~/.bashrc` or `/etc/hosts`)
+- [ ] Edit content; tab displays amber dirty dot (`●`)
+- [ ] Save (`Cmd/Ctrl+S`) saves to remote host with green confirmation toast
+- [ ] Find & Replace (`Cmd/Ctrl+F`) highlights matches and supports Replace All
+- [ ] Line numbers gutter syncs scroll with code textarea and highlights active line
+- [ ] Close tab or window with unsaved edits prompts confirmation guard
+- [ ] Language badge updates dynamically based on file extension
 
 ## Files
 

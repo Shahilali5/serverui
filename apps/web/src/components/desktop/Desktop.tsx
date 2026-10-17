@@ -13,6 +13,7 @@ import { WindowManagerProvider, useWindowManager } from "@/src/components/window
 import { AuraDesktop } from "@/src/components/desktop/AuraDesktop";
 import { useAppearance } from "@/src/lib/appearance";
 import { WallpaperBackdrop } from "@/src/lib/wallpaper";
+import { UpdateToast } from "@/src/components/desktop/UpdateToast";
 
 export function Desktop() {
   return (
@@ -140,28 +141,29 @@ function DesktopShell() {
         style={{ background: "var(--desktop-scrim)" }}
       />
       <TopBar />
-      <div className="pointer-events-none absolute left-6 top-12 z-10 text-white drop-shadow-md">
-        <BrandMark size={44} />
-        <span className="mt-3 block text-[28px] font-semibold leading-none tracking-tight">
-          ServerUI
-        </span>
-        <span className="mt-2 block text-[13px] leading-5 text-white/85">
-          {servers.length === 0
-            ? "No servers yet."
-            : `${connected} of ${servers.length} connected.`}
-          <br />
-          {desktopRuntime ? "On your desktop." : "In your browser."}
-        </span>
+      <UpdateToast />
+
+      {/* Clean Desktop Glass Widget */}
+      <div className="pointer-events-none absolute left-6 top-12 z-10 select-none">
+        <div className="flex items-center gap-3 rounded-2xl bg-black/35 px-4 py-2.5 ring-1 ring-white/10 backdrop-blur-xl shadow-lg drop-shadow-sm transition-all">
+          <BrandMark size={28} />
+          <div className="flex flex-col">
+            <span className="text-[14px] font-semibold tracking-tight text-white/95 leading-tight">
+              ServerUI
+            </span>
+            <span className="text-[11.5px] text-white/60 flex items-center gap-1.5 leading-tight mt-0.5">
+              <span
+                className={`size-1.5 rounded-full ${
+                  connected > 0 ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" : "bg-zinc-400"
+                }`}
+              />
+              {servers.length === 0
+                ? "No servers"
+                : `${connected} of ${servers.length} connected`}
+            </span>
+          </div>
+        </div>
       </div>
-      <p className="pointer-events-none absolute bottom-28 left-6 z-10 max-w-[9rem] text-[13px] leading-5 text-white/80 drop-shadow">
-        Control
-        <br />
-        Deploy
-        <br />
-        Monitor
-        <br />
-        {desktopRuntime ? "Locally." : "From anywhere."}
-      </p>
       <div
         className={`absolute inset-x-0 top-8 bottom-0 ${fullscreen ? "z-40" : "z-20"}`}
         aria-label="Server desktop"

@@ -166,6 +166,19 @@ export function AboutApp() {
               </div>
             </div>
           </div>
+
+          <div className="mt-3.5 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-white/50">
+            <span>Want to join the team? ServerUI is 100% open source.</span>
+            <a
+              href={`${SOURCE_URL}/blob/main/CONTRIBUTING.md`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-emerald-400 font-medium hover:underline underline-offset-2"
+            >
+              Contributing Guide
+              <ExternalLink className="size-3" />
+            </a>
+          </div>
         </section>
       </div>
     </div>

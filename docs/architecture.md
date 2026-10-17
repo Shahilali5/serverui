@@ -34,7 +34,7 @@ Tauri  (apps/desktop)
 
 | Layer | Responsibility |
 | ----- | -------------- |
-| Frontend (`apps/web`) | Desktop UI, server picker, files, terminal (xterm.js), metrics display |
+| Frontend (`apps/web`) | Desktop UI, server picker, files, terminal (resilient xterm.js engine), px0 code editor, metrics display |
 | Desktop shell (`apps/desktop`) | Tauri window, Go child lifecycle, loopback port + local auth injection |
 | Go backend (`apps/server`) | HTTP API, WebSocket terminal bridge, credential crypto, SSH pool, SFTP, metrics |
 | PostgreSQL (web) / SQLite (desktop) | Server records and encrypted credential ciphertext |
@@ -178,11 +178,21 @@ SFTP over the pooled SSH client. Paths are cleaned in `internal/filesystem` to
 block traversal. Every file route requires `serverId`. The frontend never talks
 SFTP directly.
 
-## Terminal
+## Terminal & Code Editor
 
+### Resilient WebSocket Terminal
 xterm.js talks WebSocket to `apps/server` (`/ws/terminal?serverId=…`). The
 backend opens an SSH session and PTY. The socket URL must not carry
 host/user/password. Desktop appends `localToken` for local API auth.
+- **0x0 Crash Prevention:** Uses `safeFitAndResize` bounds checking to prevent invalid xterm resize crashes during tab switching and minimized states.
+- **Normal Closure Protocol:** Go backend issues explicit `websocket.CloseNormalClosure` (1000) frames to prevent client 1006 false errors.
+
+### Code Editor (powered by px0)
+Integrated remote code editor inspired by the speed-first, zero-latency [`px0`](https://github.com/px0-ai/px0) IDE architecture:
+- Multi-tab remote buffers with unsaved change tracking and Close Guard confirmation.
+- Direct read/write operations via ServerUI's scoped file API (`readFile`, `writeFile`).
+- Quick Remote File Palette (`Cmd+O`) to open any remote path without leaving the editor.
+- In-memory find/replace (`Cmd+F`), auto-indentation, and syntax classification across 15+ extensions.
 
 ## Metrics
 
@@ -206,8 +216,8 @@ Shared UI information architecture:
 2. Boot (SSH connect)
 3. Desktop: TopBar (current server + switcher) → windows → Dock
 
-Working apps: Dashboard (metrics), Files, Terminal, Settings, About, file Viewer.  
-Coming soon placeholders: Editor, Applications, Domains, Databases.
+Working apps: Dashboard (metrics), Files, Terminal, Editor (px0), Settings, About, file Viewer.  
+Coming soon placeholders: Applications, Domains, Databases.
 
 Keyboard (desktop shell; Terminal input is not overridden for ⌘/Ctrl+W):
 

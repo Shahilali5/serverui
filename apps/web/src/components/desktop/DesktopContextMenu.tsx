@@ -69,6 +69,20 @@ export function DesktopContextMenu({ x, y, onClose }: DesktopContextMenuProps) {
           onClose();
         }}
       />
+      <MenuItem
+        label="Change Wallpaper…"
+        onSelect={() => {
+          openWindow("settings", { cwd: "wallpaper" });
+          onClose();
+        }}
+      />
+      <MenuItem
+        label="Check for Updates…"
+        onSelect={() => {
+          openWindow("settings", { cwd: "updates" });
+          onClose();
+        }}
+      />
       <div className="my-1 h-px bg-black/8" />
       <MenuItem
         label="Manage Servers"

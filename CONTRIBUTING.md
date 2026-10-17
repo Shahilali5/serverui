@@ -1,116 +1,185 @@
 # Contributing to ServerUI
 
-Thank you for helping build ServerUI. This guide is for people who have never seen
-the repository before.
+Thank you for your interest in contributing to ServerUI! Whether you're fixing bugs, adding new capabilities, writing documentation, or enhancing performance, we appreciate your help in building a modern open-source server control panel.
 
-## Before you start
+---
 
-- Read the [README](README.md) for architecture, setup, and current limitations.
-- Follow the [Code of Conduct](CODE_OF_CONDUCT.md).
-- Report vulnerabilities privately to [contact@skyrekon.com](mailto:contact@skyrekon.com).
-  See [SECURITY.md](SECURITY.md). Do not file public issues that include secrets.
-- For other questions, use the same address: [contact@skyrekon.com](mailto:contact@skyrekon.com).
+## Hall of Fame: Core Contributors
 
-CLI and the ServerUI agent are **not implemented**. Do not add them in an unrelated PR.
+| Contributor | Role | Focus Areas | Profile |
+| :---: | :--- | :--- | :---: |
+| <img src="https://github.com/rakhechashubham.png" width="44" height="44" style="border-radius:50%" alt="Shubham Rakhecha" /> | **Shubham Rakhecha** | Founder & Lead Architect | Creator of ServerUI, SSH connection pooling, System Monitor, core architecture | [@rakhechashubham](https://github.com/rakhechashubham) |
+| <img src="https://github.com/shahilali5.png" width="44" height="44" style="border-radius:50%" alt="Shahil" /> | **Shahil** | Core Contributor | Terminal crash resilience & lifecycle stability, px0 code editor integration, UI/UX polish | [@shahilali5](https://github.com/shahilali5) |
 
-## Development setup
+*All contributors are recognized in the repository and directly inside the ServerUI Info / About app.*
 
-Prerequisites: Git, Docker, Docker Compose, Node.js 22+, Go 1.26, OpenSSL, Make,
-and lazydocker (for `make dev`).
+---
 
+## Before You Start
+
+- Read the [README](README.md) for overall architecture, feature set, and roadmap.
+- Follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+- **Security Vulnerabilities:** Report security vulnerabilities privately to [contact@skyrekon.com](mailto:contact@skyrekon.com). See [SECURITY.md](SECURITY.md). Never post public issues containing passwords, private keys, or credentials.
+- **Scope note:** CLI and background agent daemons are currently out of scope. Please open an issue to discuss major architectural shifts before starting work.
+
+---
+
+## Step-by-Step Contribution Workflow
+
+### 1. Fork the Repository
+1. Visit [github.com/rakhechashubham/serverui](https://github.com/rakhechashubham/serverui) and click **Fork** (top right).
+2. Clone your personal fork to your machine:
+   ```bash
+   git clone https://github.com/<your-username>/serverui.git
+   cd serverui
+   ```
+
+### 2. Configure Git Identity
+Ensure your commits reflect your GitHub profile:
 ```bash
-git clone <repository-url>
-cd serverui
-cp .env.example .env
-make setup-env
-make hooks
-make dev
+git config user.name "Your Name"
+git config user.email "your-github-email@users.noreply.github.com"
 ```
 
-`make dev` starts the development stack and opens LazyDocker. Exiting that session
-removes the containers and keeps the database volume.
-
-`make start` builds production images and leaves the stack running in the background.
-
-`make hooks` sets `core.hooksPath` to `.githooks`. Local commits then run
-`make format-check`, `make lint`, and `make test`. Hooks are a developer safeguard, not
-a replacement for CI. They can be bypassed; GitHub Actions still must pass.
-
-## Repository structure
-
-```
-apps/web      Next.js UI (shared by web + desktop)
-apps/server   Go API, SSH, PostgreSQL
-apps/desktop  Tauri desktop shell
-deploy/docker Docker Compose (web deployment; not required by the Go binary)
-docs/         Architecture and images
+### 3. Set Up Upstream Remote
+Keep your fork in sync with the upstream repository:
+```bash
+git remote add upstream https://github.com/rakhechashubham/serverui.git
+git fetch upstream
 ```
 
-Desktop uses Tauri around the existing UI and Go backend. Do not move SSH into
-the frontend or create a second backend. See [docs/desktop.md](docs/desktop.md).
-
-## Workflow
-
-1. Fork the repository (or create a branch if you have write access).
-2. Create a branch from `main`.
-3. Make a focused change.
-4. Run `make format`, `make format-check`, `make lint`, `make test`, and `make build`.
-5. Commit with a conventional message.
-6. Push and open a pull request.
-
-### Branch naming
-
-```
-feature/server-management
-fix/ssh-connection
-docs/contributing
-refactor/connection-manager
-test/filesystem-paths
+### 4. Create a Feature Branch
+Always branch off the latest `main`:
+```bash
+git checkout main
+git pull upstream main
+git checkout -b feature/my-enhancement
 ```
 
-### Commit messages
+Recommended branch naming conventions:
+- `feature/<name>` — New capabilities or UI improvements
+- `fix/<name>` — Bug fixes or stability patches
+- `docs/<name>` — Documentation additions or edits
+- `refactor/<name>` — Code simplification or restructuring
+- `test/<name>` — Test suite additions
 
-Use [Conventional Commits](https://www.conventionalcommits.org/):
+---
 
+## Development Setup
+
+### Prerequisites
+- **Node.js**: v20 or v22+ (`node -v`)
+- **npm**: v10+ (`npm -v`)
+- **Go**: v1.23+ (`go version`)
+- **Docker & Docker Compose**: Optional for web/PostgreSQL stack
+- **OpenSSL**: For credential key generation
+
+### Quickstart (Local Development)
+
+1. **Environment Setup:**
+   ```bash
+   cp .env.example .env
+   # Or run:
+   make setup-env
+   ```
+
+2. **Web Frontend (`apps/web`):**
+   ```bash
+   cd apps/web
+   npm install
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+3. **Go Backend (`apps/server`):**
+   ```bash
+   cd apps/server
+   go run ./cmd/server
+   ```
+
+4. **Full Stack with Docker Compose:**
+   ```bash
+   make dev
+   # Or:
+   docker compose -f deploy/docker/docker-compose.yml up --build
+   ```
+
+---
+
+## Repository Structure
+
+```text
+serverui/
+├── apps/
+│   ├── web/             Next.js 16 UI (React 19, Tailwind v4, xterm.js, px0 editor)
+│   ├── server/          Go API server, SSH connection pool, SFTP, crypto
+│   └── desktop/         Tauri v2 desktop shell (macOS, Windows, Linux)
+├── deploy/
+│   └── docker/          Docker Compose orchestration files
+├── docs/                Architecture, security, release guides, and manual QA
+└── scripts/             Development and pre-commit automation hooks
 ```
-feat: add private key authentication
-fix: prevent filesystem path traversal
-test: add SSH configuration tests
-docs: improve local setup guide
-refactor: isolate SSH connections by server id
-chore: ignore local credential files
-ci: cache npm and Go modules
+
+---
+
+## Code Quality & Testing
+
+Before submitting your pull request, ensure tests pass and code is formatted cleanly:
+
+### Frontend (`apps/web`):
+```bash
+cd apps/web
+npm test          # Run Vitest test suite
+npm run lint      # Check ESLint rules
+npm run format    # Format with Prettier
 ```
 
-Keep the subject under ~72 characters. Do not put secrets in commit messages.
+### Backend (`apps/server`):
+```bash
+cd apps/server
+go test ./...     # Run Go unit and integration tests
+gofmt -s -w .     # Format Go codebase
+```
 
-## Code style
+### Monorepo Validation:
+```bash
+make format-check
+make lint
+make test
+```
 
-- **Go:** `gofmt`. Exported API stays small. SSH, crypto, database, and HTTP stay in
-  separate packages. Never log passwords, keys, or decrypted secrets.
-- **TypeScript/React:** Prettier for formatting, ESLint for quality. Prefer existing
-  components over new UI systems. Do not redesign the desktop unless the change requires it.
-- **Naming:** `camelCase` in TypeScript, `MixedCaps` in Go. Server identifiers are
-  backend-owned IDs, not hostnames supplied by the browser.
-- **Errors:** Return machine-readable, non-sensitive messages to the UI. Map SSH failures
-  through `PublicError`.
-- **Tests:** Cover behavior, not line count. Add or update tests for the code you change.
+---
 
-## Pull requests
+## Commit Guidelines
 
-Use the PR template. Explain what changed, why, how it was tested, and any breaking
-changes.
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-Checklist:
+```text
+feat: add px0 code editor multi-tab workspace
+fix: prevent terminal 0x0 crash during tab switching
+docs: update setup instructions in README
+refactor: streamline SSH session pool cleanup
+test: add test suite for EditorApp component
+```
 
-- [ ] `make test`
-- [ ] `make lint`
-- [ ] `make format-check`
-- [ ] `make build`
-- [ ] Docs updated when behavior or commands change
-- [ ] No secrets committed
+Guidelines:
+- Keep the subject line under 72 characters.
+- Use imperative present tense ("add", "fix", "update").
+- Never include credentials, tokens, or private keys in commit messages or diffs.
 
-## Privacy
+---
 
-Never commit real names, usernames, IP addresses, hostnames, domains, passwords, or
-keys. Examples must use fictional values such as `203.0.113.10` and `deploy`.
+## Submitting a Pull Request
+
+1. Push your branch to your GitHub fork:
+   ```bash
+   git push -u origin feature/my-enhancement
+   ```
+2. Go to your fork on GitHub and click **Compare & pull request**.
+3. Fill out the PR template describing:
+   - What changed
+   - Why the change is needed
+   - How it was tested (unit test or manual QA)
+4. Maintainers will review your PR, provide constructive feedback, and merge once checks pass!
+
+Thank you for contributing to make ServerUI the best open-source server control panel!
