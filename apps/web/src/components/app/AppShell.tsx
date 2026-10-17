@@ -6,7 +6,7 @@ import { RuntimeProvider } from "@/src/lib/runtime";
 import { SessionProvider } from "@/src/lib/session";
 import { ThemeProvider } from "@/src/lib/theme";
 import { WallpaperProvider } from "@/src/lib/wallpaper";
-import { AutoUpdaterProvider } from "@/src/lib/updater.tsx";
+import { AutoUpdaterProvider } from "@/src/lib/updater";
 
 export function AppShell() {
   return (

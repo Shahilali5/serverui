@@ -18,7 +18,7 @@ import {
 import { AppearanceSettings } from "@/src/components/shell/AppearanceSettings";
 import { useAppearance, type AppearanceId } from "@/src/lib/appearance";
 import { useWallpaper, type WallpaperId } from "@/src/lib/wallpaper";
-import { useAutoUpdater } from "@/src/lib/updater.tsx";
+import { useAutoUpdater } from "@/src/lib/updater";
 import type { WindowPayload } from "@/src/components/window/window-context";
 
 type SettingsTab = "general" | "wallpaper" | "updates";

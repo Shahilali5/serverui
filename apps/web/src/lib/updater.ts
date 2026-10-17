@@ -1,1 +1,1 @@
-export * from "./updater";
+// Deleted to avoid extension conflict with updater.tsx
