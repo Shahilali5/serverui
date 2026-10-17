@@ -142,7 +142,9 @@ export function TerminalApp({ payload }: { payload?: WindowPayload }) {
         setActiveId(existing.id);
         return current;
       }
-      const newTab = makeTab(payload.serverId, payload.cwd);
+      const serverId = payload.serverId || (serverList[0] ? serverList[0].id : "");
+      if (!serverId) return current;
+      const newTab = makeTab(serverId, payload.cwd);
       setActiveId(newTab.id);
       return [...current, newTab];
     });

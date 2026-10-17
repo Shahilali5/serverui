@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertCircle, ExternalLink, RefreshCw, Sparkles, X } from "lucide-react";
-import { useAutoUpdater } from "@/src/lib/updater";
+import { useAutoUpdater } from "@/src/lib/updater.tsx";
 
 export function UpdateToast() {
   const { updateAvailable, latestVersion, releaseUrl, applyUpdate, dismissUpdate } =

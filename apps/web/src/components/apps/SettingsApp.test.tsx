@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { WallpaperProvider } from "@/src/lib/wallpaper";
-import { AutoUpdaterProvider } from "@/src/lib/updater";
+import { AutoUpdaterProvider } from "@/src/lib/updater.tsx";
 import { SettingsApp } from "./SettingsApp";
 
 describe("SettingsApp", () => {

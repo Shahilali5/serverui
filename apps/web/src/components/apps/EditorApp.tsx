@@ -481,7 +481,7 @@ export function EditorApp({ payload, windowId }: { payload?: WindowPayload; wind
             >
               {connectedServers.map((s) => (
                 <option key={s.id} value={s.id} className="bg-zinc-900 text-white">
-                  {s.name} ({s.host || "local"})
+                  {s.name} ({s.address || s.hostname || "local"})
                 </option>
               ))}
             </select>
