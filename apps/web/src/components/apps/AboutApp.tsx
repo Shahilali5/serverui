@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { Box, ExternalLink, Globe, Lock, Monitor, Zap, type LucideIcon } from "lucide-react";
+import { Box, ExternalLink, GitPullRequest, Globe, Lock, Monitor, Zap, type LucideIcon } from "lucide-react";
 import { BrandMark } from "@/src/components/brand/BrandMark";
 
 const SOURCE_URL = "https://github.com/rakhechashubham/serverui";
@@ -116,6 +116,55 @@ export function AboutApp() {
               View Source
               <ExternalLink className="size-3.5" strokeWidth={1.75} />
             </a>
+          </div>
+        </section>
+
+        {/* Contributors Section */}
+        <section className="mt-4 w-full rounded-[18px] sui-card px-4 py-3.5 text-left">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold tracking-[0.16em] text-white/40">CORE CONTRIBUTORS</p>
+            <a
+              href={`${SOURCE_URL}/graphs/contributors`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-white/50 transition-colors hover:text-white/80"
+            >
+              All Contributors
+              <ExternalLink className="size-3" strokeWidth={1.75} />
+            </a>
+          </div>
+
+          <div className="mt-3 flex gap-3.5 items-start">
+            <span className="flex size-[52px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-[18px] font-bold text-white shadow-md ring-1 ring-white/20 select-none">
+              S
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="text-[16px] font-semibold tracking-tight text-white/95">Shahil</h4>
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-400 border border-emerald-500/30">
+                  Core Contributor
+                </span>
+              </div>
+              <p className="mt-0.5 text-[12px] text-white/50">Terminal Stability · UI Polish · Editor Integration</p>
+              <p className="mt-1.5 text-[12px] leading-5 text-white/70">
+                Resolved terminal lifecycle &amp; resize crashes, modernized terminal UI components, and integrated the px0 code editor environment into ServerUI.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <SocialLink href="https://github.com/shahilali5" label="Shahil's GitHub">
+                  <GitHubMark />
+                  shahilali5
+                </SocialLink>
+                <a
+                  href={`${SOURCE_URL}/commits?author=shahilali5`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] text-white/60 transition-colors hover:text-white/90 hover:bg-white/5"
+                >
+                  <GitPullRequest className="size-3.5 text-emerald-400" strokeWidth={1.75} />
+                  View Contributions
+                </a>
+              </div>
+            </div>
           </div>
         </section>
       </div>

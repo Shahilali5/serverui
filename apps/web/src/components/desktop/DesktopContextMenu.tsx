@@ -40,6 +40,13 @@ export function DesktopContextMenu({ x, y, onClose }: DesktopContextMenuProps) {
           onClose();
         }}
       />
+      <MenuItem
+        label="Open Editor"
+        onSelect={() => {
+          openWindow("editor");
+          onClose();
+        }}
+      />
       <div className="my-1 h-px bg-black/8" />
       <MenuItem
         label="About ServerUI"

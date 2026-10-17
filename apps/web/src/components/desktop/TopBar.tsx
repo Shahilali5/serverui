@@ -104,13 +104,13 @@ export function TopBar() {
             <div
               role="menu"
               aria-label="Server menu"
-              className="sui-menu absolute right-0 top-[calc(100%+6px)] z-[80] w-[260px] overflow-hidden rounded-2xl border py-1 text-left shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
+              className="sui-menu absolute right-0 top-[calc(100%+6px)] z-[80] w-[260px] overflow-hidden rounded-2xl border py-1.5 text-left shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
             >
-              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] opacity-50">
                 Servers
               </p>
               {servers.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-white/60">No servers configured.</p>
+                <p className="px-3 py-2 text-[12px] opacity-70">No servers configured.</p>
               ) : (
                 servers.map((item) => {
                   const status = connectionStatus(item);
@@ -123,14 +123,14 @@ export function TopBar() {
                         setMenuOpen(false);
                         openWindow("servers");
                       }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-white/90 hover:bg-white/8"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] transition-colors hover:bg-black/5 dark:hover:bg-white/8"
                     >
                       <span
                         className={`size-1.5 shrink-0 rounded-full ${
                           status === "online"
-                            ? "bg-emerald-400"
+                            ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]"
                             : status === "connecting" || status === "reconnecting"
-                              ? "bg-amber-300"
+                              ? "bg-amber-400"
                               : status === "authentication_failed" || status === "error"
                                 ? "bg-red-400"
                                 : "bg-zinc-400"
@@ -144,13 +144,13 @@ export function TopBar() {
                         updatedAt={item.updatedAt}
                         size={16}
                       />
-                      <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                      <span className="shrink-0 text-white/45">{statusLabel(status)}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{item.name}</span>
+                      <span className="shrink-0 text-[11px] opacity-50">{statusLabel(status)}</span>
                     </button>
                   );
                 })
               )}
-              <div className="my-1 h-px bg-white/8" />
+              <div className="my-1.5 h-px bg-black/10 dark:bg-white/8" />
               <button
                 type="button"
                 role="menuitem"
@@ -158,9 +158,9 @@ export function TopBar() {
                   setMenuOpen(false);
                   openWindow("servers");
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-[12px] text-white/90 hover:bg-white/8"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-[12.5px] font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/8"
               >
-                <Server aria-hidden className="size-3.5 opacity-80" />
+                <Server aria-hidden className="size-3.5 opacity-70" />
                 Manage servers
               </button>
             </div>

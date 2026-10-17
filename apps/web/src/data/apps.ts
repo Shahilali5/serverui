@@ -70,9 +70,9 @@ export const APP_META: Record<
   },
   editor: {
     title: "Editor",
-    width: 760,
-    height: 560,
-    available: false,
+    width: 960,
+    height: 640,
+    available: true,
     chrome: "dark",
   },
   applications: {

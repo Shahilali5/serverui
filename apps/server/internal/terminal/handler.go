@@ -138,7 +138,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	go func() {
 		<-done
+		writeMu.Lock()
+		_ = ws.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 		_ = ws.Close()
+		writeMu.Unlock()
 	}()
 
 	for {
