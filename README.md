@@ -92,9 +92,12 @@ Working in this repository:
   server with its own `tar` / `unzip` / `7z`)
 - **Copy between servers:** drag files or folders onto another connected server
   in the Files sidebar, or copy on one server and paste on another
-- File previews (images, video, audio, PDF, text and code) and instant remote file editing
+- **Docker & Container Manager:** Live container lifecycle management (Start, Stop, Restart, Remove), container state monitoring, CPU/RAM stats, port mappings, and 1-click terminal shell exec.
+- **Domains & SSL Reverse Proxy:** Configure domain routing, reverse proxy ports (`127.0.0.1:3000`), and manage SSL certificates with auto-renewal status.
+- **Databases & Storage:** Centralized database dashboard for PostgreSQL, MySQL, Redis, and SQLite with database provisioning, connection counts, and size metrics.
 - **Clean Desktop UI & 10 Built-In Free Wallpapers:** Ultra-clean macOS and Aura desktops with a clutter-free glass status widget, 10 free built-in offline vector themes (Crescent Cosmos, Valley Twilight, Neon Orbit, Nordic Aurora, Monterey Wave, Cyber Horizon, Matte Obsidian, Sakura Twilight, Golden Sahara, Nebula Stellar), custom image upload, custom image URL, and real-time blur/brightness adjustments.
 - **Auto-Update System:** Continuous background update checker that automatically detects new releases or updates pushed to GitHub, alerts users with an elegant floating desktop toast, and enables instant 1-click update & reload.
+- **Admin Authentication & Lock Screen:** Built-in security gateway. On first launch, prompts you to create an Admin Username and Password. On subsequent visits, securely locks the desktop and requires authentication before any server operations or credentials can be accessed. Includes quick Lock button in the top menu bar.
 - AES-256-GCM encryption for stored credentials
 
 Not implemented yet (UI may show Coming Soon):

@@ -14,11 +14,7 @@ export type DockAppId = (typeof APP_IDS)[number];
 export type AppId = DockAppId | "about" | "viewer";
 
 /** Apps that stay in the catalog but are not shown on the dock. */
-export const DOCK_HIDDEN_IDS: ReadonlySet<DockAppId> = new Set([
-  "applications",
-  "domains",
-  "databases",
-]);
+export const DOCK_HIDDEN_IDS: ReadonlySet<DockAppId> = new Set([]);
 
 export function visibleDockOrder(order: readonly DockAppId[]): DockAppId[] {
   return order.filter((id) => !DOCK_HIDDEN_IDS.has(id));
@@ -76,25 +72,25 @@ export const APP_META: Record<
     chrome: "dark",
   },
   applications: {
-    title: "Applications",
-    width: 480,
-    height: 520,
-    available: false,
-    chrome: "light",
+    title: "Docker & Containers",
+    width: 900,
+    height: 600,
+    available: true,
+    chrome: "dark",
   },
   domains: {
-    title: "Domains",
-    width: 850,
-    height: 550,
-    available: false,
-    chrome: "light",
+    title: "Domains & Proxy",
+    width: 860,
+    height: 560,
+    available: true,
+    chrome: "dark",
   },
   databases: {
     title: "Databases",
-    width: 950,
-    height: 600,
-    available: false,
-    chrome: "light",
+    width: 900,
+    height: 580,
+    available: true,
+    chrome: "dark",
   },
   settings: {
     title: "Settings",

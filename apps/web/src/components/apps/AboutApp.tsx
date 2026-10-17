@@ -119,6 +119,30 @@ export function AboutApp() {
           </div>
         </section>
 
+        {/* px0 Technology Attribution Card */}
+        <section className="mt-4 w-full rounded-[18px] sui-card px-4 py-3.5 text-left border border-amber-500/20 bg-gradient-to-r from-amber-500/[0.05] to-transparent">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="flex size-5 items-center justify-center rounded bg-[#FFC107] text-[10px] font-bold text-black shadow-sm font-mono">
+                px0
+              </span>
+              <h4 className="text-[13.5px] font-semibold text-white">Built-in Code Editor (px0 IDE)</h4>
+            </div>
+            <a
+              href="https://github.com/px0-ai/px0"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              <span>px0-ai/px0</span>
+              <ExternalLink className="size-3" />
+            </a>
+          </div>
+          <p className="mt-1.5 text-[12px] leading-5 text-white/60">
+            ServerUI features full A-to-Z remote code editing powered by <strong className="text-white">px0</strong> — the speed-first, zero-latency editor. Includes multi-tab remote buffers, quick file palette (<kbd className="rounded bg-white/10 px-1 py-0.5 font-mono text-[10px]">Cmd+O</kbd>), direct remote file saving (<kbd className="rounded bg-white/10 px-1 py-0.5 font-mono text-[10px]">Cmd+S</kbd>), regex find &amp; replace, syntax detection across 15+ languages, and dynamic cursor tracking.
+          </p>
+        </section>
+
         {/* Contributors Section */}
         <section className="mt-4 w-full rounded-[18px] sui-card px-4 py-3.5 text-left">
           <div className="flex items-center justify-between">

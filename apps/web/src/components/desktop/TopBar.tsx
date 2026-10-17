@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Server } from "lucide-react";
+import { ChevronDown, Lock, Server } from "lucide-react";
 import { ThemeToggle } from "@/src/components/desktop/ThemeToggle";
 import { BrandMark } from "@/src/components/brand/BrandMark";
 import { ServerIcon } from "@/src/components/servers/ServerIcon";
 import { useWindowManager } from "@/src/components/window/window-context";
 import { connectionStatus } from "@/src/lib/servers";
 import { useSession } from "@/src/lib/session";
+import { useAuth } from "@/src/lib/auth";
 
 function statusLabel(status: string) {
   switch (status) {
@@ -167,11 +168,27 @@ export function TopBar() {
           ) : null}
         </div>
         <ThemeToggle />
+        <LogoutButton />
         <time className="w-12 shrink-0 text-right" dateTime={time || undefined}>
           {time}
         </time>
       </div>
     </header>
+  );
+}
+
+function LogoutButton() {
+  const { logout, username } = useAuth();
+  return (
+    <button
+      type="button"
+      title={`Lock workspace (${username || "admin"})`}
+      aria-label="Lock workspace"
+      onClick={logout}
+      className="flex size-7 items-center justify-center rounded-lg text-white/60 transition-colors hover:bg-black/10 hover:text-white dark:hover:bg-white/10"
+    >
+      <Lock className="size-3.5" />
+    </button>
   );
 }
 

@@ -355,6 +355,9 @@ main() {
     echo -e "  ➜  Network:  ${CYAN}http://${DETECTED_IP}:${WEB_PORT}${RESET}"
   fi
   echo ""
+  echo -e "  ${BOLD}Security & Access:${RESET}"
+  echo -e "  ➜  Initial Setup: Open the URL above to create your secure ${BOLD}Admin Username & Password${RESET}."
+  echo ""
   echo -e "  ${BOLD}Installation Directory:${RESET} ${DIM}$INSTALL_DIR${RESET}"
   echo ""
   echo -e "  ${BOLD}Management Commands:${RESET}"
