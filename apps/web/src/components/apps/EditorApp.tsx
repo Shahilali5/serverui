@@ -152,6 +152,9 @@ export function EditorApp({ payload, windowId }: { payload?: WindowPayload; wind
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{ message: string; ok: boolean } | null>(null);
 
+  // VS Code Engine vs px0 Mode
+  const [vsCodeMode, setVsCodeMode] = useState(false);
+
   // Editor settings
   const [wordWrap, setWordWrap] = useState(true);
   const [tabSize, setTabSize] = useState<2 | 4>(2);
@@ -471,6 +474,31 @@ export function EditorApp({ payload, windowId }: { payload?: WindowPayload; wind
 
           <div className="h-4 w-px bg-white/10" />
 
+          {/* VS Code vs px0 Mode Switcher */}
+          <div className="flex items-center rounded-lg bg-white/5 p-0.5 text-[10.5px] font-medium border border-white/8">
+            <button
+              type="button"
+              onClick={() => setVsCodeMode(false)}
+              className={`rounded px-2 py-0.5 transition-all ${
+                !vsCodeMode ? "bg-white/15 text-white font-semibold shadow-sm" : "text-white/50 hover:text-white"
+              }`}
+            >
+              px0 Engine
+            </button>
+            <button
+              type="button"
+              onClick={() => setVsCodeMode(true)}
+              className={`flex items-center gap-1 rounded px-2 py-0.5 transition-all ${
+                vsCodeMode ? "bg-sky-500 text-white font-semibold shadow-sm" : "text-white/50 hover:text-white"
+              }`}
+            >
+              <Code2 className="size-3" />
+              <span>VS Code</span>
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-white/10" />
+
           {/* Connected Server Selector */}
           <div className="flex items-center gap-1.5">
             <Server className="size-3 text-white/40" />
@@ -665,7 +693,16 @@ export function EditorApp({ payload, windowId }: { payload?: WindowPayload; wind
 
       {/* Editor Main Canvas */}
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {activeTab?.loading ? (
+        {vsCodeMode ? (
+          <div className="flex h-full w-full flex-col bg-[#1e1e1e]">
+            <iframe
+              src="https://vscode.dev"
+              title="Visual Studio Code for Web"
+              className="h-full w-full border-none"
+              allow="clipboard-read; clipboard-write"
+            />
+          </div>
+        ) : activeTab?.loading ? (
           <div className="flex h-full items-center justify-center text-sm text-white/40">
             <div className="flex flex-col items-center gap-2">
               <div className="size-6 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
