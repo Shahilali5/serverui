@@ -127,14 +127,14 @@ install_essentials() {
   PKG_MGR=$(detect_pkg_manager)
 
   MISSING_PKGS=()
-  for cmd in git curl openssl; do
+  for cmd in git curl openssl nginx certbot; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       MISSING_PKGS+=("$cmd")
     fi
   done
 
   if [ ${#MISSING_PKGS[@]} -eq 0 ]; then
-    success "Essential utilities present (git, curl, openssl)."
+    success "Essential utilities present (git, curl, openssl, nginx, certbot)."
     return
   fi
 
@@ -142,19 +142,19 @@ install_essentials() {
   case "$PKG_MGR" in
     apt)
       $SUDO apt-get update -y
-      $SUDO apt-get install -y git curl openssl ca-certificates
+      $SUDO apt-get install -y git curl openssl ca-certificates nginx certbot python3-certbot-nginx
       ;;
     dnf|yum)
-      $SUDO "$PKG_MGR" install -y git curl openssl ca-certificates
+      $SUDO "$PKG_MGR" install -y git curl openssl ca-certificates nginx certbot python3-certbot-nginx
       ;;
     pacman)
-      $SUDO pacman -Sy --noconfirm git curl openssl ca-certificates
+      $SUDO pacman -Sy --noconfirm git curl openssl ca-certificates nginx certbot
       ;;
     apk)
-      $SUDO apk add --no-cache git curl openssl ca-certificates bash
+      $SUDO apk add --no-cache git curl openssl ca-certificates bash nginx certbot
       ;;
     brew)
-      brew install git curl openssl
+      brew install git curl openssl nginx certbot
       ;;
     *)
       warn "Could not auto-install ${MISSING_PKGS[*]}. Please install them manually."

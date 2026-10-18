@@ -13,8 +13,13 @@ import {
   RefreshCw,
   Check,
   Sparkles,
+  Terminal,
+  Copy,
+  CheckCircle2,
+  Code2,
 } from "lucide-react";
 import { useSession } from "@/src/lib/session";
+import { useWindowManager } from "@/src/components/window/window-context";
 
 type DomainRecord = {
   id: string;
@@ -28,11 +33,15 @@ type DomainRecord = {
 const STORAGE_KEY = "serverui-custom-domains";
 
 export function DomainsApp() {
+  const { openWindow } = useWindowManager();
   const [domains, setDomains] = useState<DomainRecord[]>([]);
   const [filter, setFilter] = useState("");
   const [newDomain, setNewDomain] = useState("");
   const [newTarget, setNewTarget] = useState("127.0.0.1:3000");
   const [modalOpen, setModalOpen] = useState(false);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [activeNginxSnippet, setActiveNginxSnippet] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     try {
@@ -52,19 +61,49 @@ export function DomainsApp() {
     } catch {}
   };
 
+  const generateNginxCommand = (domainName: string, targetAddr: string) => {
+    return `cat << 'EOF' > /etc/nginx/sites-enabled/${domainName}
+server {
+    listen 80;
+    server_name ${domainName};
+
+    location / {
+        proxy_pass http://${targetAddr};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+nginx -t && systemctl reload nginx && certbot --nginx -d ${domainName} --non-interactive --agree-tos -m admin@${domainName}`;
+  };
+
   const addDomain = () => {
-    if (!newDomain.trim()) return;
+    const cleanDomain = newDomain.trim().toLowerCase();
+    const cleanTarget = newTarget.trim() || "127.0.0.1:3000";
+    if (!cleanDomain) return;
+
     const item: DomainRecord = {
       id: `dom_${Date.now()}`,
-      domain: newDomain.trim().toLowerCase(),
-      target: newTarget.trim() || "127.0.0.1:3000",
+      domain: cleanDomain,
+      target: cleanTarget,
       ssl: true,
       sslExpiry: "90 days left",
       status: "active",
     };
+
     saveDomains([item, ...domains]);
     setNewDomain("");
     setModalOpen(false);
+
+    // Auto-generate instant SSL & Nginx proxy snippet
+    const command = generateNginxCommand(cleanDomain, cleanTarget);
+    setActiveNginxSnippet(command);
+    setSuccessNotice(cleanDomain);
   };
 
   const removeDomain = (id: string) => {
@@ -77,6 +116,12 @@ export function DomainsApp() {
       d.id === id ? { ...d, ssl: !d.ssl, sslExpiry: !d.ssl ? "90 days left" : undefined } : d,
     );
     saveDomains(next);
+  };
+
+  const copyCommand = (cmd: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const filtered = domains.filter(
@@ -123,6 +168,53 @@ export function DomainsApp() {
           </button>
         </div>
       </div>
+
+      {/* Auto-configured Domain Notice Banner */}
+      {successNotice && activeNginxSnippet ? (
+        <div className="mx-4 mt-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-4 backdrop-blur-md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 text-emerald-400">
+              <CheckCircle2 className="size-5 shrink-0" />
+              <div>
+                <h4 className="text-xs font-bold text-white">
+                  Domain &apos;{successNotice}&apos; registered successfully!
+                </h4>
+                <p className="text-[11px] text-white/60">
+                  Automatic Nginx vhost & Let&apos;s Encrypt SSL issuance script generated below:
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => copyCommand(activeNginxSnippet)}
+                className="flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-1 text-xs text-white"
+              >
+                {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
+                <span>{copied ? "Copied Command!" : "Copy One-Liner"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => openWindow("terminal")}
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 px-3 py-1 text-xs font-semibold text-zinc-950"
+              >
+                <Terminal className="size-3.5" />
+                <span>Run in Shell</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSuccessNotice(null)}
+                className="p-1 text-white/40 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div className="mt-2.5 rounded-xl bg-black/60 p-2.5 font-mono text-[11px] text-emerald-400/90 overflow-x-auto border border-white/5">
+            <pre>{activeNginxSnippet}</pre>
+          </div>
+        </div>
+      ) : null}
 
       {/* Domain list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
@@ -175,7 +267,21 @@ export function DomainsApp() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  title="View Nginx Command"
+                  onClick={() => {
+                    const cmd = generateNginxCommand(item.domain, item.target);
+                    setActiveNginxSnippet(cmd);
+                    setSuccessNotice(item.domain);
+                  }}
+                  className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-white/70 hover:bg-white/10"
+                >
+                  <Code2 className="size-3" />
+                  <span>Config</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => toggleSsl(item.id)}
@@ -219,7 +325,7 @@ export function DomainsApp() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. app.mycompany.com"
+                  placeholder="e.g. vps.ffglory.xyz"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
                   className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[12.5px] text-white placeholder-white/40 outline-none focus:border-emerald-400"
@@ -253,7 +359,7 @@ export function DomainsApp() {
                 onClick={addDomain}
                 className="rounded-xl bg-emerald-500 px-4 py-1.5 text-[12px] font-semibold text-zinc-950 transition-all hover:bg-emerald-400"
               >
-                Save & Issue SSL
+                Save & Auto-Deploy SSL
               </button>
             </div>
           </div>

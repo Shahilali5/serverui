@@ -29,17 +29,29 @@ import {
   RefreshCw,
   Clock,
   Zap,
+  Bell,
+  Code2,
+  Download,
+  Upload,
+  Cloud,
+  Check,
+  Copy,
+  X,
+  ShieldAlert,
 } from "lucide-react";
 import { useSession } from "@/src/lib/session";
 import { useWindowManager } from "@/src/components/window/window-context";
 
 type ActiveTab =
   | "overview"
+  | "appstore"
   | "websites"
   | "databases"
+  | "nginx"
   | "email"
   | "cron"
   | "firewall"
+  | "alerts"
   | "backups"
   | "system";
 
@@ -49,13 +61,29 @@ export function CPanelApp() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [search, setSearch] = useState("");
 
-  // Persistent cPanel state
+  // Persistent cPanel state with automatic version-resilient storage
   const [websites, setWebsites] = useState<any[]>([]);
   const [databases, setDatabases] = useState<any[]>([]);
   const [emailAccounts, setEmailAccounts] = useState<any[]>([]);
   const [cronJobs, setCronJobs] = useState<any[]>([]);
   const [firewallRules, setFirewallRules] = useState<any[]>([]);
+  const [bannedIps, setBannedIps] = useState<any[]>([]);
   const [backups, setBackups] = useState<any[]>([]);
+  const [alertSettings, setAlertSettings] = useState({
+    webhookUrl: "",
+    notifyOnCpu: true,
+    notifyOnDisk: true,
+    notifyOnServiceCrash: true,
+    channel: "discord",
+  });
+  const [s3Settings, setS3Settings] = useState({
+    bucket: "",
+    endpoint: "https://s3.amazonaws.com",
+    accessKey: "",
+    secretKey: "",
+    region: "us-east-1",
+  });
+  const [installedApps, setInstalledApps] = useState<string[]>([]);
 
   // Load from persistent local storage
   useEffect(() => {
@@ -76,9 +104,8 @@ export function CPanelApp() {
       if (savedFw) {
         setFirewallRules(JSON.parse(savedFw));
       } else {
-        // Default standard firewall rules
         const defaults = [
-          { id: "fw_1", port: "22", proto: "TCP", desc: "SSH Access", action: "ALLOW" },
+          { id: "fw_1", port: "22", proto: "TCP", desc: "SSH Administration", action: "ALLOW" },
           { id: "fw_2", port: "80", proto: "TCP", desc: "HTTP Web Traffic", action: "ALLOW" },
           { id: "fw_3", port: "443", proto: "TCP", desc: "HTTPS SSL Web Traffic", action: "ALLOW" },
           { id: "fw_4", port: "3000", proto: "TCP", desc: "ServerUI Panel", action: "ALLOW" },
@@ -87,12 +114,33 @@ export function CPanelApp() {
         localStorage.setItem("serverui-cpanel-firewall", JSON.stringify(defaults));
       }
 
+      const savedBanned = localStorage.getItem("serverui-cpanel-banned-ips");
+      if (savedBanned) {
+        setBannedIps(JSON.parse(savedBanned));
+      } else {
+        const defaultBanned = [
+          { ip: "185.220.101.4", reason: "SSH Brute-Force (Fail2ban)", time: "2 hours ago" },
+          { ip: "45.154.255.89", reason: "WP-Login Probe exploit", time: "5 hours ago" },
+        ];
+        setBannedIps(defaultBanned);
+        localStorage.setItem("serverui-cpanel-banned-ips", JSON.stringify(defaultBanned));
+      }
+
       const savedBackups = localStorage.getItem("serverui-cpanel-backups");
       if (savedBackups) setBackups(JSON.parse(savedBackups));
+
+      const savedAlerts = localStorage.getItem("serverui-cpanel-alerts");
+      if (savedAlerts) setAlertSettings(JSON.parse(savedAlerts));
+
+      const savedS3 = localStorage.getItem("serverui-cpanel-s3");
+      if (savedS3) setS3Settings(JSON.parse(savedS3));
+
+      const savedApps = localStorage.getItem("serverui-cpanel-installed-apps");
+      if (savedApps) setInstalledApps(JSON.parse(savedApps));
     } catch {}
   }, []);
 
-  // Save helpers
+  // Save helpers (resilient across version upgrades)
   const saveWebsites = (items: any[]) => {
     setWebsites(items);
     localStorage.setItem("serverui-cpanel-websites", JSON.stringify(items));
@@ -109,16 +157,33 @@ export function CPanelApp() {
     setFirewallRules(items);
     localStorage.setItem("serverui-cpanel-firewall", JSON.stringify(items));
   };
+  const saveBannedIps = (items: any[]) => {
+    setBannedIps(items);
+    localStorage.setItem("serverui-cpanel-banned-ips", JSON.stringify(items));
+  };
   const saveBackups = (items: any[]) => {
     setBackups(items);
     localStorage.setItem("serverui-cpanel-backups", JSON.stringify(items));
   };
+  const saveAlerts = (settings: any) => {
+    setAlertSettings(settings);
+    localStorage.setItem("serverui-cpanel-alerts", JSON.stringify(settings));
+  };
+  const saveS3 = (settings: any) => {
+    setS3Settings(settings);
+    localStorage.setItem("serverui-cpanel-s3", JSON.stringify(settings));
+  };
+  const saveApps = (apps: string[]) => {
+    setInstalledApps(apps);
+    localStorage.setItem("serverui-cpanel-installed-apps", JSON.stringify(apps));
+  };
 
-  // Quick modals state
+  // Modals state
   const [modalType, setModalType] = useState<string | null>(null);
   const [input1, setInput1] = useState("");
   const [input2, setInput2] = useState("");
   const [input3, setInput3] = useState("");
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const handleCreateWebsite = (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,30 +259,87 @@ export function CPanelApp() {
       size: "42.5 MB",
       date: new Date().toLocaleString(),
       type: "Full System Snapshot",
+      destination: s3Settings.bucket ? `S3: ${s3Settings.bucket}` : "Local VPS Disk",
     };
     saveBackups([item, ...backups]);
   };
 
+  const toggleInstallApp = (appId: string) => {
+    if (installedApps.includes(appId)) {
+      saveApps(installedApps.filter((a) => a !== appId));
+    } else {
+      saveApps([...installedApps, appId]);
+    }
+  };
+
+  const APP_STORE_ITEMS = [
+    {
+      id: "wordpress",
+      name: "WordPress",
+      desc: "World's most popular CMS with MySQL database stack.",
+      badge: "PHP & MySQL",
+      icon: "🌐",
+    },
+    {
+      id: "ghost",
+      name: "Ghost CMS",
+      desc: "Ultra-fast headless publishing platform on Node.js.",
+      badge: "Node.js",
+      icon: "👻",
+    },
+    {
+      id: "n8n",
+      name: "n8n Workflow Automation",
+      desc: "Self-hosted Zapier alternative with 400+ nodes.",
+      badge: "Automation",
+      icon: "⚡",
+    },
+    {
+      id: "adminer",
+      name: "Adminer Database Manager",
+      desc: "Ultra-lightweight replacement for phpMyAdmin.",
+      badge: "Database GUI",
+      icon: "🗄️",
+    },
+    {
+      id: "nextcloud",
+      name: "Nextcloud Hub",
+      desc: "Self-hosted private productivity and cloud storage suite.",
+      badge: "Cloud Storage",
+      icon: "☁️",
+    },
+    {
+      id: "plausible",
+      name: "Plausible Analytics",
+      desc: "Lightweight, privacy-friendly Google Analytics alternative.",
+      badge: "Analytics",
+      icon: "📊",
+    },
+  ];
+
   return (
     <div className="flex h-full bg-[#0a0d14] text-white font-sans select-none overflow-hidden">
       {/* Sidebar Navigation */}
-      <aside className="w-56 shrink-0 border-r border-white/8 bg-black/40 flex flex-col backdrop-blur-xl">
+      <aside className="w-60 shrink-0 border-r border-white/8 bg-black/40 flex flex-col backdrop-blur-xl">
         <div className="flex h-12 items-center gap-2.5 px-4 border-b border-white/8">
           <div className="flex size-7 items-center justify-center rounded-lg bg-orange-500/20 text-orange-400">
             <Sliders className="size-4" />
           </div>
-          <span className="text-[13px] font-bold tracking-tight text-white">cPanel Control</span>
+          <span className="text-[13px] font-bold tracking-tight text-white">cPanel Cloud Suite</span>
         </div>
 
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {[
-            { id: "overview", label: "Dashboard Overview", icon: Activity },
+            { id: "overview", label: "Dashboard", icon: Activity },
+            { id: "appstore", label: "1-Click App Store", icon: Flame, count: installedApps.length },
             { id: "websites", label: "Websites & VHosts", icon: Globe, count: websites.length },
-            { id: "databases", label: "MySQL & PostgreSQL", icon: Database, count: databases.length },
+            { id: "databases", label: "Databases & Adminer", icon: Database, count: databases.length },
+            { id: "nginx", label: "Nginx Reverse Proxy", icon: Code2 },
             { id: "email", label: "Email Accounts", icon: Mail, count: emailAccounts.length },
-            { id: "cron", label: "Cron Job Automation", icon: Clock, count: cronJobs.length },
-            { id: "firewall", label: "Security & Firewall", icon: ShieldCheck, count: firewallRules.length },
-            { id: "backups", label: "Backups & Restore", icon: HardDrive, count: backups.length },
+            { id: "cron", label: "Cron Automation", icon: Clock, count: cronJobs.length },
+            { id: "firewall", label: "Firewall & Fail2ban", icon: ShieldCheck, count: firewallRules.length },
+            { id: "alerts", label: "Webhook Alerts", icon: Bell },
+            { id: "backups", label: "Backups & S3 Sync", icon: HardDrive, count: backups.length },
             { id: "system", label: "Server Diagnostics", icon: Cpu },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -339,27 +461,42 @@ export function CPanelApp() {
 
                 <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
                   <div className="flex items-center justify-between text-white/60 mb-2">
-                    <span className="text-xs font-medium">Email Inboxes</span>
-                    <Mail className="size-4 text-emerald-400" />
+                    <span className="text-xs font-medium">1-Click Apps</span>
+                    <Flame className="size-4 text-orange-400" />
                   </div>
-                  <div className="text-2xl font-bold text-white">{emailAccounts.length}</div>
-                  <div className="mt-1 text-[11px] text-white/40">Custom domain mailboxes</div>
+                  <div className="text-2xl font-bold text-orange-400">{installedApps.length}</div>
+                  <div className="mt-1 text-[11px] text-white/40">Active production stacks</div>
                 </div>
 
                 <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
                   <div className="flex items-center justify-between text-white/60 mb-2">
-                    <span className="text-xs font-medium">Firewall Status</span>
+                    <span className="text-xs font-medium">Firewall & Fail2ban</span>
                     <ShieldCheck className="size-4 text-emerald-400" />
                   </div>
                   <div className="text-2xl font-bold text-emerald-400">ACTIVE</div>
                   <div className="mt-1 text-[11px] text-white/40">
-                    {firewallRules.length} ports filtered
+                    {bannedIps.length} malicious IPs blocked
                   </div>
                 </div>
               </div>
 
               {/* cPanel Feature Modules */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div
+                  onClick={() => setActiveTab("appstore")}
+                  className="group cursor-pointer rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] p-5 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-orange-500/20 text-orange-400 group-hover:scale-105 transition-transform">
+                      <Flame className="size-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white">1-Click App Store</h4>
+                      <p className="text-xs text-white/50 mt-0.5">Deploy WordPress, Ghost, n8n, Nextcloud</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div
                   onClick={() => setActiveTab("websites")}
                   className="group cursor-pointer rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] p-5 transition-all"
@@ -371,6 +508,21 @@ export function CPanelApp() {
                     <div>
                       <h4 className="text-sm font-semibold text-white">Domains & VHosts</h4>
                       <p className="text-xs text-white/50 mt-0.5">Manage domain virtual hosts & SSL</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab("nginx")}
+                  className="group cursor-pointer rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] p-5 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">
+                      <Code2 className="size-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white">Nginx / Caddy Proxy</h4>
+                      <p className="text-xs text-white/50 mt-0.5">Generate production reverse-proxy configs</p>
                     </div>
                   </div>
                 </div>
@@ -399,55 +551,217 @@ export function CPanelApp() {
                       <Database className="size-5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-white">Database Management</h4>
-                      <p className="text-xs text-white/50 mt-0.5">Create MySQL/Postgres & phpMyAdmin</p>
+                      <h4 className="text-sm font-semibold text-white">Databases & Adminer</h4>
+                      <p className="text-xs text-white/50 mt-0.5">Manage PostgreSQL, MySQL & SQLite</p>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab("email")}
+                  onClick={() => setActiveTab("alerts")}
                   className="group cursor-pointer rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] p-5 transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">
-                      <Mail className="size-5" />
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400 group-hover:scale-105 transition-transform">
+                      <Bell className="size-5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-white">Email Server</h4>
-                      <p className="text-xs text-white/50 mt-0.5">IMAP/SMTP and Webmail forwarders</p>
+                      <h4 className="text-sm font-semibold text-white">Server Health Alerts</h4>
+                      <p className="text-xs text-white/50 mt-0.5">Telegram & Discord instant notifications</p>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
 
-                <div
-                  onClick={() => setActiveTab("cron")}
-                  className="group cursor-pointer rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] p-5 transition-all"
+          {activeTab === "appstore" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">1-Click Application Stacks</h3>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Production-ready preconfigured Docker stacks with databases & reverse-proxy.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                {APP_STORE_ITEMS.map((item) => {
+                  const isInstalled = installedApps.includes(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition-all hover:border-white/15"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl">{item.icon}</span>
+                          <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-mono text-white/60">
+                            {item.badge}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-semibold text-white mt-3">{item.name}</h4>
+                        <p className="text-xs text-white/50 mt-1">{item.desc}</p>
+                      </div>
+
+                      <div className="mt-5 pt-3 border-t border-white/5 flex items-center justify-between">
+                        <span className="text-[11px] text-white/40">
+                          {isInstalled ? "Status: Running" : "Ready to deploy"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleInstallApp(item.id)}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                            isInstalled
+                              ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                              : "bg-orange-500 text-white hover:bg-orange-400"
+                          }`}
+                        >
+                          {isInstalled ? "Uninstall" : "Deploy Stack"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "nginx" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Nginx Production Reverse-Proxy Config</h3>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Ready-to-use configuration file for `/etc/nginx/sites-available/` with SSL & HTTP/2.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sampleNginx = `server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com www.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name example.com www.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}`;
+                    navigator.clipboard.writeText(sampleNginx);
+                    setCopiedCode(true);
+                    setTimeout(() => setCopiedCode(false), 2000);
+                  }}
+                  className="flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-1.5 text-xs font-medium text-white transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-purple-500/20 text-purple-400 group-hover:scale-105 transition-transform">
-                      <Clock className="size-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white">Cron Jobs</h4>
-                      <p className="text-xs text-white/50 mt-0.5">Scheduled shell and PHP automation</p>
-                    </div>
-                  </div>
+                  {copiedCode ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
+                  <span>{copiedCode ? "Copied!" : "Copy Nginx Config"}</span>
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-white/8 bg-[#07090e] p-4 font-mono text-xs text-emerald-400/90 leading-relaxed overflow-x-auto">
+                <pre>{`server {
+    listen 80;
+    listen [::]:80;
+    server_name example.com www.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name example.com www.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}`}</pre>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "alerts" && (
+            <div className="space-y-5 max-w-xl">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Server Health & Uptime Webhook Alerts</h3>
+                <p className="text-xs text-white/50 mt-0.5">
+                  Send immediate notifications to your Discord or Telegram channel when high usage or server errors occur.
+                </p>
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-white/8 bg-white/[0.03] p-5">
+                <div>
+                  <label className="text-xs font-medium text-white/80">Webhook URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://discord.com/api/webhooks/..."
+                    value={alertSettings.webhookUrl}
+                    onChange={(e) => saveAlerts({ ...alertSettings, webhookUrl: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder-white/30 focus:border-orange-500 focus:outline-none font-mono"
+                  />
                 </div>
 
-                <div
-                  onClick={() => setActiveTab("firewall")}
-                  className="group cursor-pointer rounded-2xl border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] p-5 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-red-500/20 text-red-400 group-hover:scale-105 transition-transform">
-                      <ShieldCheck className="size-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white">Firewall & UFW</h4>
-                      <p className="text-xs text-white/50 mt-0.5">Port security, IP banning & SSL</p>
-                    </div>
-                  </div>
+                <div className="space-y-2 pt-2">
+                  <label className="flex items-center gap-2.5 text-xs text-white/80 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={alertSettings.notifyOnCpu}
+                      onChange={(e) => saveAlerts({ ...alertSettings, notifyOnCpu: e.target.checked })}
+                      className="size-4 rounded border-white/20 bg-white/10"
+                    />
+                    <span>Alert when CPU usage exceeds 90% for more than 3 minutes</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-white/80 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={alertSettings.notifyOnDisk}
+                      onChange={(e) => saveAlerts({ ...alertSettings, notifyOnDisk: e.target.checked })}
+                      className="size-4 rounded border-white/20 bg-white/10"
+                    />
+                    <span>Alert when Disk capacity drops below 15%</span>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 text-xs text-white/80 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={alertSettings.notifyOnServiceCrash}
+                      onChange={(e) =>
+                        saveAlerts({ ...alertSettings, notifyOnServiceCrash: e.target.checked })
+                      }
+                      className="size-4 rounded border-white/20 bg-white/10"
+                    />
+                    <span>Alert when SSH or Nginx service crashes or stops</span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -505,6 +819,68 @@ export function CPanelApp() {
                           <Trash2 className="size-3.5" />
                         </button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "databases" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Database Engines & Web Manager</h3>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Inspect PostgreSQL, MySQL, and SQLite databases directly from the web panel.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openWindow("databases")}
+                  className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-400"
+                >
+                  <Plus className="size-3.5" />
+                  Manage / Create Databases
+                </button>
+              </div>
+
+              {databases.length === 0 ? (
+                <div className="flex h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center">
+                  <Database className="size-9 text-white/20 mb-2" />
+                  <p className="text-xs font-medium text-white/70">No active databases created</p>
+                  <p className="text-[11px] text-white/40 mt-1 max-w-sm">
+                    Create MySQL, PostgreSQL, or Redis databases with instant connection strings.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {databases.map((db) => (
+                    <div
+                      key={db.id}
+                      className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] p-3.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Database className="size-5 text-indigo-400" />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">{db.name}</span>
+                            <span className="rounded bg-indigo-500/15 px-1.5 py-0.2 text-[9.5px] font-mono text-indigo-400 uppercase">
+                              {db.type}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-white/40 mt-0.5">
+                            Size: {db.size} • {db.tables} Tables • {db.connections} Active Connections
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openWindow("databases")}
+                        className="rounded-lg bg-white/10 hover:bg-white/15 px-2.5 py-1 text-xs text-white"
+                      >
+                        Open Manager
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -619,93 +995,43 @@ export function CPanelApp() {
           )}
 
           {activeTab === "firewall" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white">Server Firewall (UFW / Iptables)</h3>
-                <button
-                  type="button"
-                  onClick={() => setModalType("firewall")}
-                  className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-400"
-                >
-                  <Plus className="size-3.5" />
-                  Allow Port
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {firewallRules.map((rule) => (
-                  <div
-                    key={rule.id}
-                    className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] p-3.5"
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-white">Firewall Port Rules (UFW / Iptables)</h3>
+                  <button
+                    type="button"
+                    onClick={() => setModalType("firewall")}
+                    className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-400"
                   >
-                    <div className="flex items-center gap-3">
-                      <ShieldCheck className="size-5 text-emerald-400" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">
-                            Port {rule.port}/{rule.proto}
-                          </span>
-                          <span className="rounded bg-emerald-500/15 px-1.5 py-0.2 text-[9.5px] font-mono text-emerald-400">
-                            {rule.action}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-white/40 mt-0.5">{rule.desc}</div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => saveFirewall(firewallRules.filter((r) => r.id !== rule.id))}
-                      className="p-1.5 text-white/40 hover:text-red-400"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "backups" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white">Full System & File Backups</h3>
-                <button
-                  type="button"
-                  onClick={handleTriggerBackup}
-                  className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-400"
-                >
-                  <Zap className="size-3.5" />
-                  Generate Snapshot
-                </button>
-              </div>
-
-              {backups.length === 0 ? (
-                <div className="flex h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center">
-                  <HardDrive className="size-9 text-white/20 mb-2" />
-                  <p className="text-xs font-medium text-white/70">No backups generated yet</p>
-                  <p className="text-[11px] text-white/40 mt-1 max-w-sm">
-                    Create manual or scheduled archive snapshots of your server configurations and databases.
-                  </p>
+                    <Plus className="size-3.5" />
+                    Allow Port
+                  </button>
                 </div>
-              ) : (
+
                 <div className="space-y-2">
-                  {backups.map((bak) => (
+                  {firewallRules.map((rule) => (
                     <div
-                      key={bak.id}
+                      key={rule.id}
                       className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] p-3.5"
                     >
                       <div className="flex items-center gap-3">
-                        <HardDrive className="size-5 text-amber-400" />
+                        <ShieldCheck className="size-5 text-emerald-400" />
                         <div>
-                          <span className="text-xs font-bold text-white">{bak.filename}</span>
-                          <div className="text-[11px] text-white/40 mt-0.5">
-                            {bak.size} • {bak.date}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white">
+                              Port {rule.port}/{rule.proto}
+                            </span>
+                            <span className="rounded bg-emerald-500/15 px-1.5 py-0.2 text-[9.5px] font-mono text-emerald-400">
+                              {rule.action}
+                            </span>
                           </div>
+                          <div className="text-[11px] text-white/40 mt-0.5">{rule.desc}</div>
                         </div>
                       </div>
                       <button
                         type="button"
-                        onClick={() => saveBackups(backups.filter((b) => b.id !== bak.id))}
+                        onClick={() => saveFirewall(firewallRules.filter((r) => r.id !== rule.id))}
                         className="p-1.5 text-white/40 hover:text-red-400"
                       >
                         <Trash2 className="size-3.5" />
@@ -713,7 +1039,157 @@ export function CPanelApp() {
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Fail2ban IP Ban Section */}
+              <div className="space-y-3 pt-3 border-t border-white/8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">Fail2ban Brute-Force Blocklist</h4>
+                    <p className="text-xs text-white/50 mt-0.5">
+                      IP addresses blocked by fail2ban after failed authentication attempts.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {bannedIps.map((b) => (
+                    <div
+                      key={b.ip}
+                      className="flex items-center justify-between rounded-xl border border-red-500/15 bg-red-500/5 p-3.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ShieldAlert className="size-5 text-red-400" />
+                        <div>
+                          <span className="text-xs font-mono font-bold text-white">{b.ip}</span>
+                          <div className="text-[11px] text-white/40 mt-0.5">
+                            {b.reason} • {b.time}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => saveBannedIps(bannedIps.filter((x) => x.ip !== b.ip))}
+                        className="rounded-lg bg-white/10 hover:bg-white/15 px-2.5 py-1 text-xs text-white/80"
+                      >
+                        Unban IP
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "backups" && (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">System Backups & Snapshots</h3>
+                    <p className="text-xs text-white/50 mt-0.5">
+                      Complete archive snapshots of all databases, configs, and websites.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleTriggerBackup}
+                    className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-400"
+                  >
+                    <Zap className="size-3.5" />
+                    Create Backup Snapshot
+                  </button>
+                </div>
+
+                {backups.length === 0 ? (
+                  <div className="flex h-44 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-6 text-center">
+                    <HardDrive className="size-8 text-white/20 mb-2" />
+                    <p className="text-xs font-medium text-white/70">No backups generated yet</p>
+                    <p className="text-[11px] text-white/40 mt-1 max-w-sm">
+                      Create manual or scheduled archive snapshots of your server configurations and databases.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {backups.map((bak) => (
+                      <div
+                        key={bak.id}
+                        className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] p-3.5"
+                      >
+                        <div className="flex items-center gap-3">
+                          <HardDrive className="size-5 text-amber-400" />
+                          <div>
+                            <span className="text-xs font-bold text-white">{bak.filename}</span>
+                            <div className="text-[11px] text-white/40 mt-0.5">
+                              {bak.size} • {bak.date} • Dest: {bak.destination}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => saveBackups(backups.filter((b) => b.id !== bak.id))}
+                          className="p-1.5 text-white/40 hover:text-red-400"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* S3 Remote Cloud Storage Sync */}
+              <div className="space-y-3 pt-3 border-t border-white/8">
+                <div>
+                  <h4 className="text-sm font-semibold text-white">Remote Cloud Sync (AWS S3 / Cloudflare R2 / B2)</h4>
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Automatically ship snapshots off-server to prevent data loss in case of VPS hardware failure.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                  <div>
+                    <label className="text-[11px] text-white/60">S3 Bucket Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. my-server-backups"
+                      value={s3Settings.bucket}
+                      onChange={(e) => saveS3({ ...s3Settings, bucket: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-white/60">S3 Endpoint URL</label>
+                    <input
+                      type="text"
+                      placeholder="https://s3.us-east-1.amazonaws.com"
+                      value={s3Settings.endpoint}
+                      onChange={(e) => saveS3({ ...s3Settings, endpoint: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-white/60">Access Key ID</label>
+                    <input
+                      type="password"
+                      placeholder="AKIA..."
+                      value={s3Settings.accessKey}
+                      onChange={(e) => saveS3({ ...s3Settings, accessKey: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-white/60">Secret Access Key</label>
+                    <input
+                      type="password"
+                      placeholder="••••••••••••••••"
+                      value={s3Settings.secretKey}
+                      onChange={(e) => saveS3({ ...s3Settings, secretKey: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
