@@ -110,6 +110,7 @@ Working in this repository:
 - **Auto-Update System:** Continuous background update checker that automatically detects new releases or updates pushed to GitHub, alerts users with an elegant floating desktop toast, and enables instant 1-click update & reload.
 - **Admin Authentication & 24-Hour Session Security:** Built-in security gateway. On first launch, prompts you to create an Admin Username and Password. Enforces strict 24-hour session expiration with automatic background invalidation, protecting your servers while keeping your configuration and data 100% persistent across updates.
 - **Zero Data Loss Upgrades:** Docker named volume isolation for PostgreSQL and automated `.env` snapshot backups ensure server credentials and custom configurations are never erased during updates.
+- **Apps Documentation:** For complete feature guides and architectural details on all 12 built-in applications, see [APPS.md](APPS.md).
 - AES-256-GCM encryption for stored credentials
 
 Settings (About, runtime, shortcuts; desktop updates) is available.
