@@ -159,8 +159,19 @@ export function AboutApp() {
           </div>
 
           <div className="mt-3 flex gap-3.5 items-start">
-            <span className="flex size-[64px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 text-[22px] font-bold text-white shadow-lg ring-2 ring-emerald-400/40 select-none">
-              SA
+            <span className="relative flex size-[68px] shrink-0 overflow-hidden rounded-full bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 shadow-lg ring-2 ring-emerald-400/40 select-none">
+              <img
+                src="https://github.com/shahilali5.png"
+                alt="Shahil (@shahilali5)"
+                className="size-full object-cover"
+                onError={(e) => {
+                  // Fallback to stylized initials if image fails or offline
+                  e.currentTarget.style.display = "none";
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.innerHTML = `<span class="size-full flex items-center justify-center text-[22px] font-bold text-white">SA</span>`;
+                  }
+                }}
+              />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

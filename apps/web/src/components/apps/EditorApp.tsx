@@ -694,13 +694,91 @@ export function EditorApp({ payload, windowId }: { payload?: WindowPayload; wind
       {/* Editor Main Canvas */}
       <div className="relative flex min-h-0 flex-1 flex-col">
         {vsCodeMode ? (
-          <div className="flex h-full w-full flex-col bg-[#1e1e1e]">
-            <iframe
-              src="https://vscode.dev"
-              title="Visual Studio Code for Web"
-              className="h-full w-full border-none"
-              allow="clipboard-read; clipboard-write"
-            />
+          <div className="flex h-full w-full flex-col bg-[#1e1e1e] select-text">
+            {/* VS Code Web Header / Status */}
+            <div className="flex h-10 shrink-0 items-center justify-between border-b border-white/10 bg-[#252526] px-4">
+              <div className="flex items-center gap-2">
+                <div className="flex size-6 items-center justify-center rounded bg-[#007ACC] text-white shadow-sm">
+                  <Code2 className="size-3.5" />
+                </div>
+                <span className="text-xs font-semibold text-white">Visual Studio Code for Web</span>
+                <span className="rounded bg-sky-500/20 px-2 py-0.5 text-[10px] font-medium text-sky-400">
+                  Active Buffer: {activeTab?.name || "scratch"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://vscode.dev"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 rounded-md bg-[#007ACC] hover:bg-[#0062a3] px-3 py-1 text-xs font-semibold text-white shadow transition-colors"
+                >
+                  <ExternalLink className="size-3.5" />
+                  <span>Open Full VS Code Desktop / Web</span>
+                </a>
+              </div>
+            </div>
+
+            {/* VS Code Native Editor Canvas */}
+            <div className="flex flex-1 min-h-0 bg-[#1e1e1e]">
+              {/* VS Code Activity Bar (Left) */}
+              <div className="w-12 shrink-0 border-r border-[#333] bg-[#333333] flex flex-col items-center py-3 space-y-4 text-white/60">
+                <button type="button" className="text-white hover:text-white" title="Explorer">
+                  <FolderOpen className="size-5" />
+                </button>
+                <button type="button" className="hover:text-white" title="Search">
+                  <Search className="size-5" />
+                </button>
+                <button type="button" className="hover:text-white" title="Source Control">
+                  <Code2 className="size-5" />
+                </button>
+              </div>
+
+              {/* VS Code Editor Area */}
+              <div className="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
+                <div className="flex h-8 items-center bg-[#2d2d2d] px-3 border-b border-[#252526] text-xs text-white">
+                  <span className="text-sky-400 font-mono mr-2">📄</span>
+                  <span className="font-medium text-white/90">{activeTab?.name || "Untitled"}</span>
+                  {activeTab?.dirty ? <span className="ml-2 size-2 rounded-full bg-amber-400" /> : null}
+                </div>
+
+                <div className="flex-1 relative p-4 font-mono text-[13px] leading-6 select-text overflow-auto">
+                  <textarea
+                    value={activeTab?.content || ""}
+                    onChange={(e) => {
+                      const nextContent = e.target.value;
+                      if (!activeTab) return;
+                      setTabs((prev) =>
+                        prev.map((t) =>
+                          t.id === activeTab.id
+                            ? { ...t, content: nextContent, dirty: nextContent !== t.savedContent }
+                            : t,
+                        ),
+                      );
+                    }}
+                    placeholder="// Write or edit your server code here with full VS Code dark theme..."
+                    className="size-full resize-none border-none bg-transparent font-mono text-[#d4d4d4] outline-none selection:bg-[#264f78]"
+                    spellCheck={false}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* VS Code Status Bar (Bottom) */}
+            <div className="flex h-6 shrink-0 items-center justify-between bg-[#007ACC] px-3 text-[11px] font-medium text-white">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span>⚡</span> Connected to {connectedServers.find((s) => s.id === selectedServerId)?.name || "Remote Server"}
+                </span>
+                <span>•</span>
+                <span>UTF-8</span>
+              </div>
+              <div className="flex items-center gap-3 font-mono">
+                <span>Spaces: 2</span>
+                <span>{currentLang}</span>
+              </div>
+            </div>
           </div>
         ) : activeTab?.loading ? (
           <div className="flex h-full items-center justify-center text-sm text-white/40">
