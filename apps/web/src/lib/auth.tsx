@@ -12,6 +12,7 @@ import {
 
 const STORAGE_KEY_AUTH = "serverui-admin-auth";
 const STORAGE_KEY_CONFIG = "serverui-admin-config";
+const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export type AuthState = {
   isConfigured: boolean;
@@ -40,20 +41,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Validate session freshness (24 hour expiration rule)
+  const checkSessionFreshness = useCallback((): boolean => {
+    try {
+      const sessionRaw = localStorage.getItem(STORAGE_KEY_AUTH);
+      if (!sessionRaw) return false;
+      const session = JSON.parse(sessionRaw);
+      const now = Date.now();
+      if (!session.timestamp || now - session.timestamp > SESSION_DURATION_MS) {
+        // Session expired after 24 hours
+        localStorage.removeItem(STORAGE_KEY_AUTH);
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     try {
       const config = localStorage.getItem(STORAGE_KEY_CONFIG);
-      const session = sessionStorage.getItem(STORAGE_KEY_AUTH);
+      const isFresh = checkSessionFreshness();
 
       if (!config) {
         setIsConfigured(false);
         setIsAuthenticated(false);
       } else {
         setIsConfigured(true);
-        if (session) {
-          const parsed = JSON.parse(session);
+        if (isFresh) {
+          const sessionRaw = localStorage.getItem(STORAGE_KEY_AUTH);
+          const parsed = sessionRaw ? JSON.parse(sessionRaw) : null;
           setIsAuthenticated(true);
-          setUsername(parsed.username || "admin");
+          setUsername(parsed?.username || "admin");
         } else {
           setIsAuthenticated(false);
         }
@@ -64,7 +84,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [checkSessionFreshness]);
+
+  // Periodic interval check to automatically log out when 24h expires while tab is open
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      if (!checkSessionFreshness()) {
+        setIsAuthenticated(false);
+        setUsername(null);
+      }
+    }, 60 * 1000); // Check every minute
+    return () => clearInterval(interval);
+  }, [isAuthenticated, checkSessionFreshness]);
 
   const setupAdmin = useCallback((user: string, pass: string): boolean => {
     if (!user.trim() || !pass.trim()) return false;
@@ -75,7 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         createdAt: Date.now(),
       };
       localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-      sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ username: config.username }));
+      localStorage.setItem(
+        STORAGE_KEY_AUTH,
+        JSON.stringify({
+          username: config.username,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + SESSION_DURATION_MS,
+        }),
+      );
       setIsConfigured(true);
       setIsAuthenticated(true);
       setUsername(config.username);
@@ -94,7 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         config.username.toLowerCase() === user.trim().toLowerCase() &&
         config.hash === hashPassword(pass.trim())
       ) {
-        sessionStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify({ username: config.username }));
+        localStorage.setItem(
+          STORAGE_KEY_AUTH,
+          JSON.stringify({
+            username: config.username,
+            timestamp: Date.now(),
+            expiresAt: Date.now() + SESSION_DURATION_MS,
+          }),
+        );
         setIsAuthenticated(true);
         setUsername(config.username);
         return true;
@@ -107,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     try {
+      localStorage.removeItem(STORAGE_KEY_AUTH);
       sessionStorage.removeItem(STORAGE_KEY_AUTH);
     } catch {}
     setIsAuthenticated(false);

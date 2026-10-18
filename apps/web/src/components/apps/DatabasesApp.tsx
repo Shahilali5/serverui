@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Database,
   Plus,
@@ -28,51 +28,32 @@ type DatabaseRecord = {
   status: "online" | "offline";
 };
 
-const SAMPLE_DBS: DatabaseRecord[] = [
-  {
-    id: "db_1",
-    name: "serverui_production",
-    type: "postgresql",
-    size: "42.8 MB",
-    tables: 14,
-    connections: 6,
-    status: "online",
-  },
-  {
-    id: "db_2",
-    name: "ecommerce_store",
-    type: "postgresql",
-    size: "184.2 MB",
-    tables: 38,
-    connections: 12,
-    status: "online",
-  },
-  {
-    id: "db_3",
-    name: "user_session_cache",
-    type: "redis",
-    size: "16.5 MB",
-    tables: 1,
-    connections: 4,
-    status: "online",
-  },
-  {
-    id: "db_4",
-    name: "analytics_archive",
-    type: "mysql",
-    size: "520.1 MB",
-    tables: 22,
-    connections: 2,
-    status: "online",
-  },
-];
+const STORAGE_KEY = "serverui-databases";
 
 export function DatabasesApp() {
-  const [databases, setDatabases] = useState<DatabaseRecord[]>(SAMPLE_DBS);
+  const [databases, setDatabases] = useState<DatabaseRecord[]>([]);
   const [filter, setFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<DatabaseRecord["type"]>("postgresql");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setDatabases(JSON.parse(saved));
+      }
+    } catch {
+      // Empty by default
+    }
+  }, []);
+
+  const saveDatabases = (updated: DatabaseRecord[]) => {
+    setDatabases(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+  };
 
   const addDatabase = () => {
     if (!newName.trim()) return;
@@ -82,16 +63,17 @@ export function DatabasesApp() {
       type: newType,
       size: "0 MB",
       tables: 0,
-      connections: 0,
+      connections: 1,
       status: "online",
     };
-    setDatabases((prev) => [item, ...prev]);
+    saveDatabases([item, ...databases]);
     setNewName("");
     setModalOpen(false);
   };
 
   const removeDb = (id: string) => {
-    setDatabases((prev) => prev.filter((d) => d.id !== id));
+    const next = databases.filter((d) => d.id !== id);
+    saveDatabases(next);
   };
 
   const filtered = databases.filter(
@@ -141,46 +123,64 @@ export function DatabasesApp() {
 
       {/* Database list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3.5 transition-all hover:border-white/15 hover:bg-white/[0.05]"
-          >
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-white/70">
-                <Database className="size-4.5 text-indigo-400" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-[13.5px] font-semibold text-white">
-                    {item.name}
-                  </span>
-                  <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[9.5px] font-mono font-medium uppercase text-indigo-300">
-                    {item.type}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-white/45">
-                  <span>Size: {item.size}</span>
-                  <span>•</span>
-                  <span>{item.tables} Tables</span>
-                  <span>•</span>
-                  <span>{item.connections} Active Connections</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                title="Delete Database"
-                onClick={() => removeDb(item.id)}
-                className="flex size-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
+        {filtered.length === 0 ? (
+          <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-8 text-center">
+            <Database className="size-10 text-white/20 mb-3" />
+            <h3 className="text-sm font-medium text-white/80">No databases created yet</h3>
+            <p className="mt-1 text-xs text-white/40 max-w-sm">
+              Provision PostgreSQL, MySQL, Redis, or SQLite instances for your production workloads.
+            </p>
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="mt-4 flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-1.5 text-xs font-medium text-white transition-colors"
+            >
+              <Plus className="size-3.5" />
+              Create First Database
+            </button>
           </div>
-        ))}
+        ) : (
+          filtered.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3.5 transition-all hover:border-white/15 hover:bg-white/[0.05]"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-white/70">
+                  <Database className="size-4.5 text-indigo-400" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[13.5px] font-semibold text-white">
+                      {item.name}
+                    </span>
+                    <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[9.5px] font-mono font-medium uppercase text-indigo-300">
+                      {item.type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-white/45">
+                    <span>Size: {item.size}</span>
+                    <span>•</span>
+                    <span>{item.tables} Tables</span>
+                    <span>•</span>
+                    <span>{item.connections} Active Connections</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  title="Delete Database"
+                  onClick={() => removeDb(item.id)}
+                  className="flex size-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Add Database Modal */}

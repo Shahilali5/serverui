@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Globe,
   Lock,
@@ -25,62 +25,58 @@ type DomainRecord = {
   status: "active" | "pending" | "error";
 };
 
-const SAMPLE_DOMAINS: DomainRecord[] = [
-  {
-    id: "dom_1",
-    domain: "panel.example.com",
-    target: "127.0.0.1:3000",
-    ssl: true,
-    sslExpiry: "82 days left",
-    status: "active",
-  },
-  {
-    id: "dom_2",
-    domain: "api.example.com",
-    target: "127.0.0.1:8080",
-    ssl: true,
-    sslExpiry: "82 days left",
-    status: "active",
-  },
-  {
-    id: "dom_3",
-    domain: "staging.example.com",
-    target: "127.0.0.1:4000",
-    ssl: false,
-    status: "active",
-  },
-];
+const STORAGE_KEY = "serverui-custom-domains";
 
 export function DomainsApp() {
-  const [domains, setDomains] = useState<DomainRecord[]>(SAMPLE_DOMAINS);
+  const [domains, setDomains] = useState<DomainRecord[]>([]);
   const [filter, setFilter] = useState("");
   const [newDomain, setNewDomain] = useState("");
   const [newTarget, setNewTarget] = useState("127.0.0.1:3000");
   const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        setDomains(JSON.parse(saved));
+      }
+    } catch {
+      // Empty by default
+    }
+  }, []);
+
+  const saveDomains = (updated: DomainRecord[]) => {
+    setDomains(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+  };
 
   const addDomain = () => {
     if (!newDomain.trim()) return;
     const item: DomainRecord = {
       id: `dom_${Date.now()}`,
       domain: newDomain.trim().toLowerCase(),
-      target: newTarget.trim(),
+      target: newTarget.trim() || "127.0.0.1:3000",
       ssl: true,
       sslExpiry: "90 days left",
       status: "active",
     };
-    setDomains((prev) => [item, ...prev]);
+    saveDomains([item, ...domains]);
     setNewDomain("");
     setModalOpen(false);
   };
 
   const removeDomain = (id: string) => {
-    setDomains((prev) => prev.filter((d) => d.id !== id));
+    const next = domains.filter((d) => d.id !== id);
+    saveDomains(next);
   };
 
   const toggleSsl = (id: string) => {
-    setDomains((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, ssl: !d.ssl, sslExpiry: !d.ssl ? "90 days left" : undefined } : d)),
+    const next = domains.map((d) =>
+      d.id === id ? { ...d, ssl: !d.ssl, sslExpiry: !d.ssl ? "90 days left" : undefined } : d,
     );
+    saveDomains(next);
   };
 
   const filtered = domains.filter(
@@ -130,63 +126,81 @@ export function DomainsApp() {
 
       {/* Domain list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
-        {filtered.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3.5 transition-all hover:border-white/15 hover:bg-white/[0.05]"
-          >
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-white/70">
-                <Globe className="size-4.5" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-[13.5px] font-semibold text-white">
-                    {item.domain}
-                  </span>
-                  <a
-                    href={`https://${item.domain}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-white/40 hover:text-white"
-                  >
-                    <ExternalLink className="size-3" />
-                  </a>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-white/45">
-                  <span>Proxying to:</span>
-                  <span className="rounded bg-white/10 px-1.5 py-0.2 font-mono text-white/70">
-                    {item.target}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => toggleSsl(item.id)}
-                className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all ${
-                  item.ssl
-                    ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
-                    : "border border-white/10 bg-white/5 text-white/50 hover:text-white"
-                }`}
-              >
-                <Lock className="size-3" />
-                {item.ssl ? item.sslExpiry || "SSL Active" : "No SSL"}
-              </button>
-
-              <button
-                type="button"
-                title="Delete Domain"
-                onClick={() => removeDomain(item.id)}
-                className="flex size-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-            </div>
+        {filtered.length === 0 ? (
+          <div className="flex h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 p-8 text-center">
+            <Globe className="size-10 text-white/20 mb-3" />
+            <h3 className="text-sm font-medium text-white/80">No custom domains configured</h3>
+            <p className="mt-1 text-xs text-white/40 max-w-sm">
+              Point your domain or subdomain to this server and enable automatic SSL reverse proxy.
+            </p>
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="mt-4 flex items-center gap-1.5 rounded-lg bg-white/10 hover:bg-white/15 px-3 py-1.5 text-xs font-medium text-white transition-colors"
+            >
+              <Plus className="size-3.5" />
+              Add Custom Domain
+            </button>
           </div>
-        ))}
+        ) : (
+          filtered.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] p-3.5 transition-all hover:border-white/15 hover:bg-white/[0.05]"
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/5 text-white/70">
+                  <Globe className="size-4.5" />
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[13.5px] font-semibold text-white">
+                      {item.domain}
+                    </span>
+                    <a
+                      href={`https://${item.domain}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-white/40 hover:text-white"
+                    >
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-white/45">
+                    <span>Proxying to:</span>
+                    <span className="rounded bg-white/10 px-1.5 py-0.2 font-mono text-white/70">
+                      {item.target}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => toggleSsl(item.id)}
+                  className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-[11px] font-medium transition-all ${
+                    item.ssl
+                      ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+                      : "border border-white/10 bg-white/5 text-white/50 hover:text-white"
+                  }`}
+                >
+                  <Lock className="size-3" />
+                  {item.ssl ? item.sslExpiry || "SSL Active" : "No SSL"}
+                </button>
+
+                <button
+                  type="button"
+                  title="Delete Domain"
+                  onClick={() => removeDomain(item.id)}
+                  className="flex size-8 items-center justify-center rounded-xl text-white/40 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Add Domain Modal */}

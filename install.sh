@@ -43,7 +43,7 @@ print_banner() {
   A Modern, Open-Source Server Control Panel
 EOF
   echo -e "${RESET}"
-  echo -e "${DIM}  Version 0.3.0  •  Built for Cloud, VPS & Bare Metal${RESET}"
+  echo -e "${DIM}  Version 0.3.1  •  Built for Cloud, VPS & Bare Metal${RESET}"
   echo -e "${DIM}  Contributors: Shubham Rakhecha & Shahil (@shahilali5)${RESET}"
   echo ""
 }
@@ -224,10 +224,18 @@ setup_repository() {
   if [ -f "apps/web/package.json" ] && [ -f "apps/server/go.mod" ]; then
     INSTALL_DIR="$(pwd)"
     success "Running inside existing ServerUI workspace at $INSTALL_DIR."
+    if [ -f ".env" ]; then
+      cp .env .env.backup.$(date +%s) 2>/dev/null || true
+      info "Backed up existing .env configuration to prevent any data loss."
+    fi
   else
     if [ -d "$INSTALL_DIR/.git" ]; then
       info "Existing ServerUI repository found at $INSTALL_DIR. Pulling latest $BRANCH..."
       cd "$INSTALL_DIR"
+      if [ -f ".env" ]; then
+        cp .env .env.backup.$(date +%s) 2>/dev/null || true
+        info "Backed up existing .env configuration to prevent any data loss."
+      fi
       git fetch origin "$BRANCH"
       git checkout "$BRANCH"
       git pull origin "$BRANCH"
