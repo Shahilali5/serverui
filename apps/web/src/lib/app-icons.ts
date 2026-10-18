@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Server,
   Settings,
+  Sliders,
   Terminal,
 } from "lucide-react";
 import type { AppId } from "@/src/data/apps";
@@ -22,6 +23,7 @@ export const APP_ICONS: Record<AppId, LucideIcon> = {
   files: Folder,
   terminal: Terminal,
   editor: Code2,
+  cpanel: Sliders,
   applications: Boxes,
   domains: Globe,
   databases: Database,
