@@ -39,7 +39,12 @@ export function AboutApp() {
     <div className="h-full overflow-auto px-7 py-4 sui-title">
       <div className="mx-auto flex max-w-[680px] flex-col items-center">
         <BrandMark size={64} className="drop-shadow-sm" />
-        <h3 className="mt-3 text-[28px] font-semibold tracking-tight">ServerUI</h3>
+        <div className="mt-3 flex items-center gap-2">
+          <h3 className="text-[28px] font-semibold tracking-tight">ServerUI</h3>
+          <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
+            v1.2.0
+          </span>
+        </div>
         <p className="mt-1 max-w-[380px] text-center text-[13px] leading-5 text-white/55">
           A modern, open-source control panel for managing servers from the browser.
         </p>
