@@ -92,12 +92,20 @@ Working in this repository:
   server with its own `tar` / `unzip` / `7z`)
 - **Copy between servers:** drag files or folders onto another connected server
   in the Files sidebar, or copy on one server and paste on another
+- **cPanel Suite (Full A-to-Z Server Management):** An integrated control panel hub covering complete server administration:
+  - **Hosted Websites & Virtual Hosts:** Create Apache/Nginx vhosts, set document roots, select PHP versions (PHP 8.2, 8.3-FPM, Node.js 22, Python 3.12), and activate SSL.
+  - **Database Management:** Full lifecycle management for PostgreSQL, MySQL, Redis, and SQLite.
+  - **Email Accounts & Mailboxes:** Provision custom-domain email inboxes with quota controls and IMAP/SMTP configurations.
+  - **Cron Job Automation:** Full scheduler for background commands, PHP maintenance jobs, and periodic scripts.
+  - **Firewall & Port Rules (UFW/Iptables):** View, add, and toggle port rules (SSH 22, HTTP 80, HTTPS 443, Custom ports) directly from the interface.
+  - **Backups & Restore:** Instant snapshot generation and tarball creation for files, databases, and server configurations.
+  - **Server Diagnostics:** Live OS kernel, engine versions, and platform specifications.
 - **Docker & Container Manager:** Live container lifecycle management (Start, Stop, Restart, Remove), container state monitoring, CPU/RAM stats, port mappings, and 1-click terminal shell exec.
 - **Domains & SSL Reverse Proxy:** Configure domain routing, reverse proxy ports (`127.0.0.1:3000`), and manage SSL certificates with auto-renewal status.
 - **Databases & Storage:** Centralized database dashboard for PostgreSQL, MySQL, Redis, and SQLite with database provisioning, connection counts, and size metrics.
 - **Clean Desktop UI & 10 Built-In Free Wallpapers:** Ultra-clean macOS and Aura desktops with a clutter-free glass status widget, 10 free built-in offline vector themes (Crescent Cosmos, Valley Twilight, Neon Orbit, Nordic Aurora, Monterey Wave, Cyber Horizon, Matte Obsidian, Sakura Twilight, Golden Sahara, Nebula Stellar), custom image upload, custom image URL, and real-time blur/brightness adjustments.
 - **Auto-Update System:** Continuous background update checker that automatically detects new releases or updates pushed to GitHub, alerts users with an elegant floating desktop toast, and enables instant 1-click update & reload.
-- **Admin Authentication & Lock Screen:** Built-in security gateway. On first launch, prompts you to create an Admin Username and Password. On subsequent visits, securely locks the desktop and requires authentication before any server operations or credentials can be accessed. Includes quick Lock button in the top menu bar.
+- **Admin Authentication & 24-Hour Session Security:** Built-in security gateway. On first launch, prompts you to create an Admin Username and Password. Enforces strict 24-hour session expiration with automatic background invalidation, protecting your servers while keeping your configuration and data 100% persistent across updates.
 - AES-256-GCM encryption for stored credentials
 
 Not implemented yet (UI may show Coming Soon):

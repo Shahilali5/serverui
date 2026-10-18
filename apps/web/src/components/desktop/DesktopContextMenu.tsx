@@ -48,6 +48,13 @@ export function DesktopContextMenu({ x, y, onClose }: DesktopContextMenuProps) {
         }}
       />
       <MenuItem
+        label="cPanel Suite"
+        onSelect={() => {
+          openWindow("cpanel");
+          onClose();
+        }}
+      />
+      <MenuItem
         label="Docker & Containers"
         onSelect={() => {
           openWindow("applications");

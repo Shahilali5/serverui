@@ -77,6 +77,10 @@ export function EditorGlyph({ className }: IconProps) {
   return <EditorMacIcon className={className} />;
 }
 
+export function CPanelGlyph({ className }: IconProps) {
+  return <MacDuskIcon Icon={Launchpad} className={className} bg="#EA580C" fg="#FFFFFF" />;
+}
+
 export function ApplicationsGlyph({ className }: IconProps) {
   return <MacDuskIcon Icon={Launchpad} className={className} bg="#2A2B2E" fg="#E4E6EA" />;
 }
@@ -103,6 +107,7 @@ export const DOCK_GLYPHS: Record<DockAppId | "info", ComponentType<IconProps>> =
   files: FilesGlyph,
   terminal: TerminalGlyph,
   editor: EditorGlyph,
+  cpanel: CPanelGlyph,
   applications: ApplicationsGlyph,
   domains: DomainsGlyph,
   databases: DatabasesGlyph,

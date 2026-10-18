@@ -2,6 +2,7 @@
 
 import { AboutApp } from "@/src/components/apps/AboutApp";
 import { ApplicationsApp } from "@/src/components/apps/ApplicationsApp";
+import { CPanelApp } from "@/src/components/apps/CPanelApp";
 import { DashboardApp } from "@/src/components/apps/DashboardApp";
 import { DatabasesApp } from "@/src/components/apps/DatabasesApp";
 import { DomainsApp } from "@/src/components/apps/DomainsApp";
@@ -54,6 +55,8 @@ function AppBody({
       return <EditorApp payload={payload} windowId={windowId} />;
     case "viewer":
       return <FileViewer payload={payload} windowId={windowId} />;
+    case "cpanel":
+      return <CPanelApp />;
     case "applications":
       return <ApplicationsApp />;
     case "domains":
